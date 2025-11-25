@@ -1,9 +1,9 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Live Tracking</title>
+  <title>En ruta: ubica tu transporte</title>
 
   <!-- Leaflet -->
   <link
@@ -23,9 +23,15 @@
       background: #f1ecf7;
     }
 
-    /* HEADER degradado lila */
+    /* HEADER degradado lila – de ABAJO hacia ARRIBA y más intermedio */
     header {
-      background: linear-gradient(90deg, #b086f7, #9b5de5, #7a3fe0);
+      background: linear-gradient(
+        180deg,
+        #d8caff,
+        #d4c4ff,
+        #cfbdff,
+        #c9b4ff
+      );
       color: white;
       padding: 18px;
       text-align: center;
@@ -50,7 +56,6 @@
       box-shadow: 0 0 12px rgba(155, 93, 229, 0.9);
     }
 
-    /* Animación suave */
     .leaflet-marker-icon {
       transition: transform 0.7s ease;
     }
@@ -58,7 +63,11 @@
 </head>
 <body>
 
+  <!-- 🔥 TÍTULO FINAL CORRECTO -->
   <header>En ruta: ubica tu transporte</header>
+
+  <!-- ❌ Se eliminó el texto duplicado dentro de la barra blanca -->
+  <!-- Nada más se conserva el mapa -->
 
   <div id="map"></div>
 
@@ -116,16 +125,13 @@
         return;
       }
 
-      if (lastPosition[0] === lat && lastPosition[1] === lng) {
-        return;
-      }
+      if (lastPosition[0] === lat && lastPosition[1] === lng) return;
 
       marker.setLatLng(newPos);
       map.panTo(newPos);
 
       lastPosition = newPos;
     }
-
 
     /* ===========================================================
                  🔥 LISTENER REAL DE FIREBASE
@@ -156,7 +162,6 @@
     fetch(osrmUrl)
       .then(response => response.json())
       .then(data => {
-
         const coords = data.routes[0].geometry.coordinates;
         const latlngs = coords.map(c => [c[1], c[0]]);
 
@@ -164,10 +169,7 @@
             color: "rgba(53, 209, 111, 0.75)",
             weight: 5
         }).addTo(map);
-
-      })
-      .catch(err => console.error("Error cargando la ruta OSRM:", err));
-
+      });
   </script>
 </body>
 </html>
