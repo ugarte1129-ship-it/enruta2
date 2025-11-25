@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Registro de Autobús</title>
+    <title>Enviar Ubicación</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -14,25 +14,19 @@
             height: 100vh;
             margin: 0;
         }
-        h2 { 
-            color: #4b3c8c; 
-            margin-bottom: 10px;
-        }
+        h2 { color: #4b3c8c; }
         form {
             background: #fff;
             padding: 30px;
             border-radius: 15px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            width: 300px;
-            text-align: center;
         }
-        select {
+        input {
             padding: 12px;
             margin: 10px 0;
             width: 100%;
             border-radius: 10px;
             border: 1px solid #ccc;
-            font-size: 14px;
         }
         button {
             padding: 15px;
@@ -49,20 +43,11 @@
     </style>
 </head>
 <body>
-
     <h2>Registro de Autobús</h2>
 
     <form onsubmit="startTracking(); return false;">
-        <label>Unidad:</label>
-
-        <select id="busID" required>
-            <option value="" disabled selected>Selecciona la unidad</option>
-            <option value="RA">RA</option>
-            <option value="RP">RP</option>
-            <option value="RV">RV</option>
-            <option value="RS">RS</option>
-        </select>
-
+        <label>ID del Autobús:</label>
+        <input id="busID" type="text" placeholder="Ej: RA" required>
         <button type="submit">Iniciar</button>
     </form>
 
@@ -85,15 +70,14 @@
         const db = firebase.database();
 
         function startTracking() {
-            const busID = document.getElementById("busID").value;
-
+            const busID = document.getElementById('busID').value.trim();
             if (!busID) {
-                alert("Selecciona una unidad válida.");
+                alert("Ingresa un ID válido");
                 return;
             }
 
             if (!navigator.geolocation) {
-                alert("Tu navegador no soporta geolocalización.");
+                alert("Tu navegador no soporta geolocalización");
                 return;
             }
 
@@ -105,11 +89,13 @@
                         timestamp: Date.now()
                     });
                 },
-                (err) => alert("Error obteniendo ubicación: " + err.message),
+                (err) => {
+                    alert("Error obteniendo ubicación: " + err.message);
+                },
                 { enableHighAccuracy: true }
             );
 
-            alert("Enviando ubicación para la unidad: " + busID);
+            alert("Enviando ubicación del ID: " + busID);
         }
     </script>
 
