@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Viewer de Rutas</title>
+<title>Viewer de Rutas - Simplificado</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
@@ -15,41 +15,6 @@
         box-shadow:0px 3px 8px rgba(0,0,0,0.15);
     }
     select { padding:8px; width:140px; }
-
-    /* Marcador animado lila */
-    .loader {
-        width:48px; height:48px;
-        display:block;
-        position:relative;
-        transform:translate(-50%, -50%);
-    }
-    .loader::after {
-        content:'';
-        width:48px; height:48px;
-        left:0; bottom:0; position:absolute;
-        border-radius:50% 50% 0;
-        border:15px solid #9b59b6; /* lila */
-        transform:rotate(45deg) translate(0,0);
-        box-sizing:border-box;
-        animation:animMarker 0.4s ease-in-out infinite alternate;
-    }
-    .loader::before {
-        content:'';
-        box-sizing:border-box;
-        position:absolute;
-        left:0; right:0; margin:auto; top:150%;
-        width:24px; height:4px; border-radius:50%;
-        background:rgba(0,0,0,0.2);
-        animation:animShadow 0.4s ease-in-out infinite alternate;
-    }
-    @keyframes animMarker {
-        0% { transform:rotate(45deg) translate(5px,5px); }
-        100% { transform:rotate(45deg) translate(-5px,-5px); }
-    }
-    @keyframes animShadow {
-        0% { transform:scale(0.5); }
-        100% { transform:scale(1); }
-    }
 </style>
 </head>
 <body>
@@ -92,8 +57,6 @@
     }).addTo(map);
 
     let marker = null;
-    let polyline = null;
-    let path = [];
     let activeListener = null;
 
     const unitSelect = document.getElementById("unitSelect");
@@ -105,29 +68,16 @@
         // Detener listener anterior
         if(activeListener) activeListener.off();
 
-        // Reiniciar ruta
-        path = [];
-        if(polyline) map.removeLayer(polyline);
-
         activeListener = db.ref("ubicaciones/" + busID);
         activeListener.on("value", snapshot => {
             const data = snapshot.val();
             if (!data || !data.lat || !data.lng) return;
 
             const latlng = [data.lat, data.lng];
-            path.push(latlng);
 
-            // Crear o actualizar polyline
-            if(!polyline){
-                polyline = L.polyline(path, {color:'#9b59b6', weight:5, smoothFactor:1}).addTo(map);
-            } else {
-                polyline.setLatLngs(path);
-            }
-
-            // Crear o mover marcador animado
+            // Crear o mover marcador simple
             if(!marker){
-                const customIcon = L.divIcon({className:'loader'});
-                marker = L.marker(latlng, {icon:customIcon}).addTo(map);
+                marker = L.marker(latlng).addTo(map);
             } else {
                 marker.setLatLng(latlng);
             }
