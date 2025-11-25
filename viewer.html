@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>En Ruta – Ubicación en vivo</title>
+<title>En Ruta – Ubicación en vivo + Ruta OSRM</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
@@ -104,7 +104,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
 <script>
-/* ========= FIREBASE REAL (del código que tu diste) ========= */
+/* ========= FIREBASE REAL ========= */
 const firebaseConfig = {
     apiKey: "AIzaSyA5pec-pqAnksqEKocrUv0HImO0H-qINDY",
     authDomain: "pgps-252ee.firebaseapp.com",
@@ -147,7 +147,6 @@ document.getElementById("connectBtn").addEventListener("click", () => {
         return;
     }
 
-    // quitar listener anterior si existía
     if (activeListener) activeListener.off();
 
     activeListener = db.ref("ubicacion/" + busID);
@@ -165,11 +164,7 @@ document.getElementById("connectBtn").addEventListener("click", () => {
 
 /* ========= ACTUALIZAR MARCADOR SOLO SI CAMBIA ========= */
 function actualizarMarcador(lat, lng) {
-
-    // si no ha cambiado, no moverlo
-    if (lastLat === lat && lastLng === lng) {
-        return;
-    }
+    if (lastLat === lat && lastLng === lng) return;
 
     const newPos = [lat, lng];
 
@@ -184,6 +179,38 @@ function actualizarMarcador(lat, lng) {
     lastLat = lat;
     lastLng = lng;
 }
+
+/* ============================================================
+      🔵 AÑADIMOS LA RUTA OSRM SIN AFECTAR TU FUNCIONALIDAD
+   ============================================================ */
+
+const osrmUrl =
+    "https://router.project-osrm.org/route/v1/driving/" +
+    "-100.9468,25.4530;" +          // La Asunción 215
+    "-100.9917106,25.4415147;" +    // Instituto Tecnológico de Saltillo
+    "-100.96143732,25.44356175;" +  // Plaza Patio Sendero
+    "-100.9468,25.4530" +           // Regreso a La Asunción
+    "?overview=full&geometries=geojson&steps=false";
+
+fetch(osrmUrl)
+    .then(response => response.json())
+    .then(data => {
+
+        const coords = data.routes[0].geometry.coordinates;
+
+        const latlngs = coords.map(c => [c[1], c[0]]);
+
+        L.polyline(latlngs, {
+            color: 'blue',
+            weight: 5
+        }).addTo(map);
+
+        // NO hacemos fitBounds para NO interferir con tu mapa ni seguimiento
+        // Si quieres activarlo, descomenta:
+        // map.fitBounds(latlngs);
+    })
+    .catch(err => console.error("Error cargando la ruta OSRM:", err));
+
 </script>
 
 </body>
