@@ -23,16 +23,16 @@
       background: #f1ecf7;
     }
 
-    /* HEADER con degradado EXACTO que pediste */
+    /* HEADER con degradado corregido (predominio tonos claros) */
     header {
       background: linear-gradient(
         90deg,
-        #f7f3ff,
-        #f3effe,
-        #f0ebff,
-        #ede8ff,
-        #e8e2fe,
-        #e2daff
+        #f7f3ff 0%,
+        #f3effe 20%,
+        #f0ebff 40%,
+        #ede8ff 60%,
+        #e8e2fe55 80%,
+        #e2daff55 100%
       );
       color: #4b2e83;
       padding: 18px;
@@ -58,7 +58,6 @@
       box-shadow: 0 0 12px rgba(155, 93, 229, 0.9);
     }
 
-    /* Animación suave */
     .leaflet-marker-icon {
       transition: transform 0.7s ease;
     }
@@ -66,15 +65,11 @@
 </head>
 <body>
 
-  <header>Seguimiento en Vivo</header>
+  <header>En ruta: ubica tu transporte</header>
 
   <div id="map"></div>
 
   <script>
-    /* ===========================================================
-                      🔥  CONFIGURAR FIREBASE
-    ============================================================ */
-
     const firebaseConfig = {
         apiKey: "AIzaSyA5pec-pqAnksqEKocrUv0HImO0H-qINDY",
         authDomain: "pgps-252ee.firebaseapp.com",
@@ -88,18 +83,12 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-
-    /* ===========================================================
-                                MAPA
-    ============================================================ */
-
     const map = L.map("map").setView([25.423, -100.992], 14);
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
     }).addTo(map);
 
-    /* Marcador LILA */
     const purpleIcon = L.divIcon({
       className: "purple-marker",
       iconSize: [20, 20],
@@ -108,11 +97,6 @@
 
     let marker = null;
     let lastPosition = null;
-
-
-    /* ===========================================================
-                    🔄 ACTUALIZAR UBICACIÓN DEL SENDER
-    ============================================================ */
 
     function updateLocation(lat, lng) {
       const newPos = [lat, lng];
@@ -124,34 +108,20 @@
         return;
       }
 
-      if (lastPosition[0] === lat && lastPosition[1] === lng) {
-        return;
-      }
+      if (lastPosition[0] === lat && lastPosition[1] === lng) return;
 
       marker.setLatLng(newPos);
       map.panTo(newPos);
-
       lastPosition = newPos;
     }
-
-
-    /* ===========================================================
-                 🔥 LISTENER REAL DE FIREBASE
-    ============================================================ */
 
     const activeUnit = "RA";
 
     db.ref("ubicacion/" + activeUnit).on("value", snapshot => {
       const data = snapshot.val();
       if (!data || !data.lat || !data.lng) return;
-
       updateLocation(data.lat, data.lng);
     });
-
-
-    /* ===========================================================
-                 🟩  RUTA OSRM — VERDE 75% OPACIDAD
-    ============================================================ */
 
     const osrmUrl =
         "https://router.project-osrm.org/route/v1/driving/" +
@@ -164,18 +134,15 @@
     fetch(osrmUrl)
       .then(response => response.json())
       .then(data => {
-
         const coords = data.routes[0].geometry.coordinates;
         const latlngs = coords.map(c => [c[1], c[0]]);
 
         L.polyline(latlngs, {
-            color: "rgba(53, 209, 111, 0.75)",  // Verde pastel 75%
+            color: "rgba(53, 209, 111, 0.75)",
             weight: 5
         }).addTo(map);
-
       })
       .catch(err => console.error("Error cargando la ruta OSRM:", err));
-
   </script>
 </body>
 </html>
