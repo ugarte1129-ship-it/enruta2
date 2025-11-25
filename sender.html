@@ -5,14 +5,64 @@
     <title>Sender | Enviar ubicación</title>
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+
     <style>
-        body { font-family: Arial; margin: 0; }
-        #map { height: 100vh; }
+        body { 
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f8f4ff;
+        }
+        #topBar {
+            padding: 15px;
+            background: #9c7aff;
+            color: white;
+            font-size: 18px;
+            text-align: center;
+            font-weight: bold;
+        }
+        #controls {
+            padding: 10px;
+            text-align: center;
+            background: #f2ecff;
+        }
+        select {
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #bbb;
+            width: 200px;
+        }
+        button {
+            padding: 10px 20px;
+            margin-left: 10px;
+            border-radius: 10px;
+            border: none;
+            background: #4b3c8c;
+            color: white;
+            cursor: pointer;
+        }
+        #map {
+            height: calc(100vh - 140px);
+        }
     </style>
 </head>
 <body>
 
+<div id="topBar">Enviando ubicación</div>
+
+<div id="controls">
+    <select id="unidad">
+        <option value="" disabled selected>Selecciona la unidad</option>
+        <option value="RA">RA</option>
+        <option value="RP">RP</option>
+        <option value="RV">RV</option>
+        <option value="RS">RS</option>
+    </select>
+
+    <button onclick="iniciarEnvio()">Iniciar</button>
+</div>
+
 <div id="map"></div>
+
 
 <script type="module">
     // ---------------------- Firebase Config ----------------------
@@ -20,27 +70,47 @@
     import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
     const firebaseConfig = {
-        apiKey: "TU_API_KEY",
-        authDomain: "TU_AUTH_DOMAIN",
-        databaseURL: "https://TU_PROJECT_ID.firebaseio.com",
-        projectId: "TU_PROJECT_ID",
-        storageBucket: "TU_STORAGE_BUCKET",
-        messagingSenderId: "TU_MESSAGING_SENDER_ID",
-        appId: "TU_APP_ID"
+        apiKey: "AIzaSyD2HcDytEFh2lQqjR1zW4FQ2OtxyjI9Fus",
+        authDomain: "pgps-252ee.firebaseapp.com",
+        databaseURL: "https://pgps-252ee-default-rtdb.firebaseio.com",
+        projectId: "pgps-252ee",
+        storageBucket: "pgps-252ee.firebasestorage.app",
+        messagingSenderId: "872355118404",
+        appId: "1:872355118404:web:412e1ac6fc7755b2ccab11"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
     // ---------------------- Leaflet ----------------------
-    let map = L.map("map").setView([0, 0], 15);
+    let map = L.map("map").setView([19.4326, -99.1332], 15);
 
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+    // Fondo gris claro (como antes)
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+        maxZoom: 20
+    }).addTo(map);
 
-    let marker = L.marker([0, 0]).addTo(map);
+    let marker = L.marker([19.4326, -99.1332]).addTo(map);
 
-    // ---------------------- Ubicación ----------------------
-    function updateLocation() {
+
+    // ---------------------- Función principal ----------------------
+    let unidadSeleccionada = null;
+
+    function iniciarEnvio() {
+        unidadSeleccionada = document.getElementById("unidad").value;
+
+        if (!unidadSeleccionada) {
+            alert("Selecciona una unidad");
+            return;
+        }
+
+        alert("Enviando ubicación para unidad: " + unidadSeleccionada);
+
+        iniciarGPS();
+    }
+
+
+    function iniciarGPS() {
         if (!navigator.geolocation) {
             alert("Tu navegador no soporta geolocalización");
             return;
@@ -51,23 +121,24 @@
             let lon = pos.coords.longitude;
 
             marker.setLatLng([lat, lon]);
-            map.setView([lat, lon], 15);
+            map.setView([lat, lon]);
 
-            // Guardar en Firebase
-            set(ref(db, "sender/ubicacion"), {
+            // Guardar en Firebase en la ruta correcta
+            set(ref(db, "ubicacion/" + unidadSeleccionada), {
                 lat: lat,
-                lon: lon,
+                lng: lon,
                 timestamp: Date.now()
             });
 
         }, err => {
-            console.log("Error: ", err);
+            console.log("Error obteniendo ubicación", err);
+        }, {
+            enableHighAccuracy: true
         });
     }
-
-    updateLocation();
 </script>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 </body>
 </html>
-
