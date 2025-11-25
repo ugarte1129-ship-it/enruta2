@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Viewer de Rutas Calle por Calle</title>
+<title>Viewer Rutas RA</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
 body { margin:0; font-family: Arial, sans-serif; }
@@ -75,7 +75,7 @@ select { padding: 8px; width: 140px; }
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
 <script>
-// Configuración de Firebase
+// Configuración Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyA5pec-pqAnksqEKocrUv0HImO0H-qINDY",
     authDomain: "pgps-252ee.firebaseapp.com",
@@ -89,28 +89,52 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 // Inicializar mapa gris
-const map = L.map('map').setView([22.15,-100.98],13);
+const map = L.map('map').setView([25.423, -100.992],14);
 L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>',
     maxZoom: 20
 }).addTo(map);
 
+// Ruta fija RA: La Asunción → Instituto Tecnológico
+const routeRA = [
+    [25.425, -100.995], // La Asunción (ejemplo)
+    [25.424, -100.993],
+    [25.423, -100.992], // Instituto Tecnológico (ejemplo)
+];
+let polylineRA = L.polyline(routeRA, {color:'yellow', weight:5}).addTo(map);
+
 let marker = null;
-let path = [];
-let polyline = null;
-let lastPoint = null;
+const unitSelect = document.getElementById("unitSelect");
 let activeListener = null;
 
-// Tu API Key de OpenRouteService
-const ORS_API_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjVhOTAwMjNlMjM2ZDQyMzZhYjI2YjhkMzYzN2ZiMjcyIiwiaCI6Im11cm11cjY0In0=";
-
-async function getRoute(start, end){
-    const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${ORS_API_KEY}&start=${start[1]},${start[0]}&end=${end[1]},${end[0]}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    const coords = data.features[0].geometry.coordinates;
-    return coords.map(c => [c[1], c[0]]);
+function moveMarker(point){
+    if(!marker){
+        marker = L.marker(point, {
+            icon: L.divIcon({className:'loader', iconSize:[48,48], iconAnchor:[24,48]})
+        }).addTo(map);
+    } else {
+        marker.setLatLng(point);
+    }
+    map.setView(point,15);
 }
 
-async function moveMarker(newPoint){
-    if(!mar
+unitSelect.addEventListener("change", function(){
+    const busID = this.value;
+    if(activeListener) activeListener.off();
+    if(busID === "RA"){
+        // Solo escuchamos RA
+        activeListener = db.ref("ubicaciones/"+busID);
+        activeListener.on("value", snapshot=>{
+            const data = snapshot.val();
+            if(!data || !data.lat || !data.lng) return;
+            moveMarker([data.lat, data.lng]);
+        });
+    } else {
+        // Limpiar marcador si no es RA
+        if(marker) map.removeLayer(marker);
+    }
+});
+</script>
+
+</body>
+</html>
