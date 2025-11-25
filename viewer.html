@@ -2,141 +2,78 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>En ruta: Ubica tu transporte</title>
-
-    <style>
-        body { margin:0; font-family: Arial, sans-serif; background: #f8f4ff; }
-        #map { height: 100vh; }
-        header {
-            text-align: center;
-            padding: 15px;
-            background: #9c7aff;
-            color: #fff;
-            font-size: 20px;
-            font-weight: bold;
-        }
-        #controls {
-            position: absolute;
-            z-index: 9999;
-            top: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #fff;
-            padding: 10px 15px;
-            border-radius: 12px;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.2);
-        }
-        select {
-            padding: 8px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-        }
-        button {
-            padding: 8px 15px;
-            border-radius: 8px;
-            border: none;
-            background: #4b3c8c;
-            color: #fff;
-            cursor: pointer;
-        }
-    </style>
+    <title>Viewer | Ver ubicación</title>
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
-    <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        body { margin: 0; }
+        #map { height: 100vh; }
+    </style>
 </head>
-
 <body>
-    <header>En ruta: Ubica tu transporte</header>
 
-    <div id="controls">
-        <select id="busID">
-            <option value="" disabled selected>Selecciona unidad</option>
-            <option value="RA">RA</option>
-            <option value="RP">RP</option>
-            <option value="RV">RV</option>
-            <option value="RS">RS</option>
-        </select>
-        <button onclick="connectBus()">Conectar</button>
-    </div>
+<div id="map"></div>
 
-    <div id="map"></div>
+<script type="module">
+    // ---------------------- Firebase ----------------------
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyD2HcDytEFh2lQqjR1zW4FQ2OtxyjI9Fus",
-            authDomain: "pgps-252ee.firebaseapp.com",
-            databaseURL: "https://pgps-252ee-default-rtdb.firebaseio.com",
-            projectId: "pgps-252ee",
-            storageBucket: "pgps-252ee.firebasestorage.app",
-            messagingSenderId: "872355118404",
-            appId: "1:872355118404:web:412e1ac6fc7755b2ccab11"
-        };
+    const firebaseConfig = {
+        apiKey: "TU_API_KEY",
+        authDomain: "TU_AUTH_DOMAIN",
+        databaseURL: "https://TU_PROJECT_ID.firebaseio.com",
+        projectId: "TU_PROJECT_ID",
+        storageBucket: "TU_STORAGE_BUCKET",
+        messagingSenderId: "TU_MESSAGING_SENDER_ID",
+        appId: "TU_APP_ID"
+    };
 
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-        const map = L.map('map').setView([19.43, -99.13], 14);
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+    // ---------------------- Leaflet ----------------------
+    let map = L.map("map").setView([0, 0], 14);
 
-        // Icono pastel del camión
-        const busIcon = L.icon({
-            iconUrl: "https://i.imgur.com/7QFQbqL.png",
-            iconSize: [50,50],
-            iconAnchor: [25,25]
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+
+    let senderMarker = L.marker([0, 0], { title: "Transporte" }).addTo(map);
+    let viewerMarker = L.marker([0, 0], { title: "Tú" }).addTo(map);
+
+    let polylinePoints = [];
+    let polyline = L.polyline([], { color: "purple" }).addTo(map);
+
+    // ---------------------- Ubicación Viewer ----------------------
+    function getViewerLocation() {
+        navigator.geolocation.watchPosition(pos => {
+            let lat = pos.coords.latitude;
+            let lon = pos.coords.longitude;
+
+            viewerMarker.setLatLng([lat, lon]);
+
         });
+    }
+    getViewerLocation();
 
-        let marker = null;
-        let userMarker = null;
-        let polyline = L.polyline([], { color: "#b58aff", weight: 5 }).addTo(map);
+    // ---------------------- Escuchar ubicación del Sender ----------------------
+    const senderRef = ref(db, "sender/ubicacion");
 
-        // Ubicación del usuario
-        if (navigator.geolocation) {
-            navigator.geolocation.watchPosition((pos) => {
-                const lat = pos.coords.latitude;
-                const lng = pos.coords.longitude;
+    onValue(senderRef, snapshot => {
+        let data = snapshot.val();
+        if (!data) return;
 
-                if (!userMarker) {
-                    userMarker = L.circleMarker([lat, lng], {
-                        radius: 8,
-                        color: "#4b3c8c",
-                        fillColor: "#9c7aff",
-                        fillOpacity: 0.9
-                    }).addTo(map);
-                } else {
-                    userMarker.setLatLng([lat, lng]);
-                }
-            });
-        }
+        let lat = data.lat;
+        let lon = data.lon;
 
-        function connectBus() {
-            const busID = document.getElementById("busID").value;
-            if (!busID) {
-                alert("Selecciona una unidad");
-                return;
-            }
+        senderMarker.setLatLng([lat, lon]);
 
-            db.ref("ubicacion/" + busID).on("value", (snap) => {
-                if (!snap.exists()) return;
+        polylinePoints.push([lat, lon]);
+        polyline.setLatLngs(polylinePoints);
 
-                const data = snap.val();
-                const lat = data.lat;
-                const lng = data.lng;
+        map.setView([lat, lon]);
+    });
 
-                if (!marker) {
-                    marker = L.marker([lat, lng], { icon: busIcon }).addTo(map);
-                } else {
-                    marker.setLatLng([lat, lng]);
-                }
-
-                polyline.addLatLng([lat, lng]);
-                map.setView([lat, lng]);
-            });
-        }
-    </script>
+</script>
 
 </body>
 </html>
