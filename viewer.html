@@ -1,188 +1,142 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta charset="UTF-8">
     <title>En ruta: Ubica tu transporte</title>
 
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-
     <style>
-        body { margin:0; font-family: Arial; background:#f8f4ff; }
+        body { margin:0; font-family: Arial, sans-serif; background: #f8f4ff; }
+        #map { height: 100vh; }
         header {
-            text-align:center; padding:18px; background:#9c7aff; color:#fff;
-            font-size:22px; font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.1);
+            text-align: center;
+            padding: 15px;
+            background: #9c7aff;
+            color: #fff;
+            font-size: 20px;
+            font-weight: bold;
         }
         #controls {
-            padding:12px; text-align:center; background:#f3edff;
+            position: absolute;
+            z-index: 9999;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #fff;
+            padding: 10px 15px;
+            border-radius: 12px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.2);
         }
         select {
-            padding:10px; width:180px; border-radius:10px; border:1px solid #ccc;
-            font-size:14px;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
         }
         button {
-            padding:10px 18px; border:none; background:#4b3c8c; color:#fff;
-            border-radius:10px; cursor:pointer;
-        }
-        #map { height: 87vh; }
-
-        /* Marcador animado morado */
-        .loader {
-          width: 48px; height: 48px; display: block; position: relative;
-        }
-        .loader::after {
-          content: ''; width:48px; height:48px; position:absolute;
-          border-radius:50% 50% 0; border:15px solid #9c7aff;
-          transform: rotate(45deg); animation: anim 0.5s infinite alternate ease-in-out;
-        }
-        @keyframes anim {
-          from { transform: rotate(45deg) translate(4px,4px); }
-          to   { transform: rotate(45deg) translate(-4px,-4px); }
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: none;
+            background: #4b3c8c;
+            color: #fff;
+            cursor: pointer;
         }
     </style>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
+
 <body>
+    <header>En ruta: Ubica tu transporte</header>
 
-<header>En ruta: Ubica tu transporte</header>
+    <div id="controls">
+        <select id="busID">
+            <option value="" disabled selected>Selecciona unidad</option>
+            <option value="RA">RA</option>
+            <option value="RP">RP</option>
+            <option value="RV">RV</option>
+            <option value="RS">RS</option>
+        </select>
+        <button onclick="connectBus()">Conectar</button>
+    </div>
 
-<div id="controls">
-    <select id="rutaSelect">
-        <option value="">Seleccionar unidad</option>
-        <option value="RA">RA</option>
-        <option value="RP">RP</option>
-        <option value="RV">RV</option>
-        <option value="RS">RS</option>
-    </select>
-    <button id="btnConnect">Ver ruta</button>
-</div>
+    <div id="map"></div>
 
-<div id="map"></div>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyD2HcDytEFh2lQqjR1zW4FQ2OtxyjI9Fus",
+            authDomain: "pgps-252ee.firebaseapp.com",
+            databaseURL: "https://pgps-252ee-default-rtdb.firebaseio.com",
+            projectId: "pgps-252ee",
+            storageBucket: "pgps-252ee.firebasestorage.app",
+            messagingSenderId: "872355118404",
+            appId: "1:872355118404:web:412e1ac6fc7755b2ccab11"
+        };
 
-<!-- Leaflet JS -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+        const map = L.map('map').setView([19.43, -99.13], 14);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
-<script>
-/* ------------------------------------------------
-   Firebase
--------------------------------------------------- */
-const firebaseConfig = {
-    apiKey: "AIzaSyD2HcDytEFh2lQqjR1zW4FQ2OtxyjI9Fus",
-    authDomain: "pgps-252ee.firebaseapp.com",
-    databaseURL: "https://pgps-252ee-default-rtdb.firebaseio.com",
-    projectId: "pgps-252ee",
-    storageBucket: "pgps-252ee.firebasestorage.app",
-    messagingSenderId: "872355118404",
-    appId: "1:872355118404:web:412e1ac6fc7755b2ccab11"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-/* -----------------------------------------------
-   MAPA
--------------------------------------------------- */
-const map = L.map("map").setView([19.4326,-99.1332], 13);
-L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-    subdomains:"abcd", maxZoom:19
-}).addTo(map);
-
-const ROUTE_COLORS = {
-    RA:"#bda3ff",
-    RP:"#ff9bd5",
-    RV:"#ffb77a",
-    RS:"#ffe88b"
-};
-
-/* ICONO DEL CAMIÓN */
-const truckIcon = L.divIcon({
-    className: "",
-    html: '<div class="loader"></div>',
-    iconSize:[48,48],
-    iconAnchor:[24,48]
-});
-
-/* DATOS */
-let listener = null;
-let marker = null;
-let polyline = null;
-let path = [];
-
-/* ------------------------------------------------
-   CONECTAR A UNIDAD
--------------------------------------------------- */
-document.getElementById("btnConnect").onclick = () => {
-    const ruta = document.getElementById("rutaSelect").value;
-    if (!ruta) { alert("Selecciona una unidad"); return; }
-
-    if (listener) db.ref("ubicacion").off("value", listener);
-
-    if (marker) map.removeLayer(marker);
-    if (polyline) map.removeLayer(polyline);
-    marker = null;
-    polyline = null;
-    path = [];
-
-    const color = ROUTE_COLORS[ruta];
-
-    listener = db.ref("ubicacion").on("value", snap => {
-        const data = snap.val() || {};
-        Object.keys(data).forEach(id => {
-            if (id !== ruta) return; // Solo esa unidad exacta
-
-            const p = data[id];
-            if (!p || !p.lat || !p.lng) return;
-
-            const lat = p.lat;
-            const lng = p.lng;
-
-            path.push([lat,lng]);
-
-            if (!marker) {
-                marker = L.marker([lat,lng], { icon:truckIcon }).addTo(map);
-                map.setView([lat,lng], 15);
-            } else {
-                marker.setLatLng([lat,lng]);
-            }
-
-            if (!polyline) {
-                polyline = L.polyline(path, { color:color, weight:5 }).addTo(map);
-            } else {
-                polyline.setLatLngs(path);
-            }
+        // Icono pastel del camión
+        const busIcon = L.icon({
+            iconUrl: "https://i.imgur.com/7QFQbqL.png",
+            iconSize: [50,50],
+            iconAnchor: [25,25]
         });
-    });
-};
 
-/* ------------------------------------------------
-   UBICACIÓN DEL USUARIO
--------------------------------------------------- */
-let userMarker = null;
-let userCircle = null;
+        let marker = null;
+        let userMarker = null;
+        let polyline = L.polyline([], { color: "#b58aff", weight: 5 }).addTo(map);
 
-navigator.geolocation.watchPosition(pos => {
-    const lat = pos.coords.latitude;
-    const lng = pos.coords.longitude;
-    const acc = pos.coords.accuracy || 25;
+        // Ubicación del usuario
+        if (navigator.geolocation) {
+            navigator.geolocation.watchPosition((pos) => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
 
-    if (!userMarker) {
-        userMarker = L.circleMarker([lat,lng], {
-            radius:7, color:"#4b7bff", fillColor:"#4b7bff", fillOpacity:0.9
-        }).addTo(map);
+                if (!userMarker) {
+                    userMarker = L.circleMarker([lat, lng], {
+                        radius: 8,
+                        color: "#4b3c8c",
+                        fillColor: "#9c7aff",
+                        fillOpacity: 0.9
+                    }).addTo(map);
+                } else {
+                    userMarker.setLatLng([lat, lng]);
+                }
+            });
+        }
 
-        userCircle = L.circle([lat,lng], {
-            radius:acc, color:"#4b7bff", fillColor:"#4b7bff", fillOpacity:0.12
-        }).addTo(map);
-    } else {
-        userMarker.setLatLng([lat,lng]);
-        userCircle.setLatLng([lat,lng]);
-        userCircle.setRadius(acc);
-    }
-}, err => console.warn(err), { enableHighAccuracy:true });
-</script>
+        function connectBus() {
+            const busID = document.getElementById("busID").value;
+            if (!busID) {
+                alert("Selecciona una unidad");
+                return;
+            }
+
+            db.ref("ubicacion/" + busID).on("value", (snap) => {
+                if (!snap.exists()) return;
+
+                const data = snap.val();
+                const lat = data.lat;
+                const lng = data.lng;
+
+                if (!marker) {
+                    marker = L.marker([lat, lng], { icon: busIcon }).addTo(map);
+                } else {
+                    marker.setLatLng([lat, lng]);
+                }
+
+                polyline.addLatLng([lat, lng]);
+                map.setView([lat, lng]);
+            });
+        }
+    </script>
 
 </body>
 </html>
