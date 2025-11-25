@@ -1,178 +1,142 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Live Tracking</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ubicación en Vivo</title>
 
-  <!-- Leaflet -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: white;
+            font-family: Arial, sans-serif;
+        }
 
-  <style>
-    body {
-      margin: 0;
-      font-family: "Montserrat", sans-serif;
-      background: #f1ecf7;
-    }
+        header {
+            width: 100%;
+            padding: 20px;
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(90deg, #b26bff, #d8b4ff);
+        }
 
-    /* HEADER degradado lila */
-    header {
-      background: linear-gradient(90deg, #b086f7, #9b5de5, #7a3fe0);
-      color: white;
-      padding: 18px;
-      text-align: center;
-      font-size: 23px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      box-shadow: 0 2px 15px rgba(0,0,0,0.25);
-    }
+        #map {
+            width: 100vw;
+            height: 100vh;
+        }
 
-    #map {
-      width: 100%;
-      height: calc(100vh - 70px);
-    }
-
-    /* Marcador lila */
-    .purple-marker {
-      background-color: #9b5de5;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      border: 3px solid white;
-      box-shadow: 0 0 12px rgba(155, 93, 229, 0.9);
-    }
-
-    /* Animación suave */
-    .leaflet-marker-icon {
-      transition: transform 0.7s ease;
-    }
-  </style>
+        /* Marcador morado */
+        .purple-marker {
+            background-color: #b26bff;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 0 10px #b26bff;
+        }
+    </style>
 </head>
+
 <body>
 
-  <header>Seguimiento en Vivo</header>
+<header>Ubicación en Vivo</header>
+<div id="map"></div>
 
-  <div id="map"></div>
+<!-- Leaflet -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <script>
-    /* ===========================================================
-                      🔥  CONFIGURAR FIREBASE
-    ============================================================ */
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js"></script>
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyA5pec-pqAnksqEKocrUv0HImO0H-qINDY",
-        authDomain: "pgps-252ee.firebaseapp.com",
-        databaseURL: "https://pgps-252ee-default-rtdb.firebaseio.com/",
-        projectId: "pgps-252ee",
-        storageBucket: "pgps-252ee.appspot.com",
-        messagingSenderId: "310435537463",
-        appId: "1:310435537463:web:9a0086d69a05b3b7fb2537"
-    };
+<script>
+/* ----------------------------
+   🚀 1. CONFIGURACIÓN FIREBASE
+----------------------------- */
+const firebaseConfig = {
+    apiKey: "AIzaSyDpxi2FQX1L-hBb3Ywqpgf7GkK80vKIPZg",
+    authDomain: "tracktec-5d724.firebaseapp.com",
+    databaseURL: "https://tracktec-5d724-default-rtdb.firebaseio.com",
+    projectId: "tracktec-5d724",
+    storageBucket: "tracktec-5d724.appspot.com",
+    messagingSenderId: "1094086420013",
+    appId: "1:1094086420013:web:4710c2e2a28be76be0813b"
+};
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-
-    /* ===========================================================
-                                MAPA
-    ============================================================ */
-
-    const map = L.map("map").setView([25.423, -100.992], 14);
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-    }).addTo(map);
-
-    /* Marcador LILA */
-    const purpleIcon = L.divIcon({
-      className: "purple-marker",
-      iconSize: [20, 20],
-      iconAnchor: [10, 10],
-    });
-
-    let marker = null;
-    let lastPosition = null;
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
 
-    /* ===========================================================
-                    🔄 ACTUALIZAR UBICACIÓN DEL SENDER
-    ============================================================ */
+/* ----------------------------
+   🌍 2. CREAR MAPA LEAFLET
+----------------------------- */
+const map = L.map("map").setView([25.45, -100.96], 14);
 
-    function updateLocation(lat, lng) {
-      const newPos = [lat, lng];
-
-      // Primera vez → crear marcador
-      if (!marker) {
-        marker = L.marker(newPos, { icon: purpleIcon }).addTo(map);
-        map.setView(newPos, 17);
-        lastPosition = newPos;
-        return;
-      }
-
-      // Si no se movió → no hacer nada
-      if (lastPosition[0] === lat && lastPosition[1] === lng) {
-        return;
-      }
-
-      // Movimiento suave
-      marker.setLatLng(newPos);
-      map.panTo(newPos);
-
-      lastPosition = newPos;
-    }
+// Tiles
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+}).addTo(map);
 
 
-    /* ===========================================================
-                 🔥 LISTENER REAL DE FIREBASE (SIN SIMULACIONES)
-    ============================================================ */
+/* ----------------------------
+   📍 3. MARCADOR MORADO ANIMADO
+----------------------------- */
+const purpleIcon = L.divIcon({
+    className: "purple-marker",
+    iconSize: [22, 22]
+});
 
-    const activeUnit = "RA";  // unidad a rastrear
-
-    db.ref("ubicacion/" + activeUnit).on("value", snapshot => {
-      const data = snapshot.val();
-      if (!data || !data.lat || !data.lng) return;
-
-      updateLocation(data.lat, data.lng);
-    });
+let marker = L.marker([25.45, -100.96], { icon: purpleIcon }).addTo(map);
 
 
-    /* ===========================================================
-                 🟩  RUTA OSRM — VERDE PASTEL + OPACIDAD
-    ============================================================ */
+/* ----------------------------
+   🔄 4. ESCUCHAR UBICACIÓN REAL
+----------------------------- */
+db.ref("sender/location").on("value", snapshot => {
+    const data = snapshot.val();
+    if (!data) return;
 
-    const osrmUrl =
-        "https://router.project-osrm.org/route/v1/driving/" +
-        "-100.9468,25.4530;" +          // La Asunción 215
-        "-100.9917106,25.4415147;" +    // ITS
-        "-100.96143732,25.44356175;" +  // Plaza Patio Sendero
-        "-100.9468,25.4530" +           // Regreso
-        "?overview=full&geometries=geojson&steps=false";
+    const { latitude, longitude } = data;
+    const newPos = [latitude, longitude];
 
-    fetch(osrmUrl)
-      .then(response => response.json())
-      .then(data => {
+    marker.setLatLng(newPos);
+    map.panTo(newPos, { animate: true });
+});
 
+
+/* ----------------------------
+   🛣️ 5. DIBUJAR RUTA OSRM (VERDE PASTEL 50% OPACIDAD)
+----------------------------- */
+const osrmUrl =
+    "https://router.project-osrm.org/route/v1/driving/" +
+    "-100.9468,25.4530;" +          // La Asunción
+    "-100.9917106,25.4415147;" +    // ITS
+    "-100.96143732,25.44356175;" +  // Sendero
+    "-100.9468,25.4530" +           // Regreso
+    "?overview=full&geometries=geojson&steps=false";
+
+fetch(osrmUrl)
+    .then(r => r.json())
+    .then(data => {
         const coords = data.routes[0].geometry.coordinates;
         const latlngs = coords.map(c => [c[1], c[0]]);
 
-        // 🔥 Verde pastel con opacidad media
         L.polyline(latlngs, {
-            color: '#a8f0b5',
-            weight: 6,
-            opacity: 0.55
+            color: "#7CFC00",   // 💚 VERDE PASTEL
+            weight: 5,
+            opacity: 0.5       // 🔥 50% TRANSLÚCIDO
         }).addTo(map);
 
-      })
-      .catch(err => console.error("Error cargando la ruta OSRM:", err));
+        map.fitBounds(latlngs);
+    })
+    .catch(err => console.error("Error en OSRM:", err));
+</script>
 
-  </script>
 </body>
 </html>
