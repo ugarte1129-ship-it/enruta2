@@ -6,7 +6,10 @@
   <title>Live Tracking</title>
 
   <!-- Leaflet -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <!-- Firebase -->
@@ -20,9 +23,9 @@
       background: #f1ecf7;
     }
 
-    /* HEADER degradado lila — SOLO SE AJUSTÓ EL TONO */
+    /* HEADER degradado lila */
     header {
-      background: linear-gradient(90deg, #9d6df3, #8a4ee8, #7a3fe0);
+      background: linear-gradient(90deg, #b086f7, #9b5de5, #7a3fe0);
       color: white;
       padding: 18px;
       text-align: center;
@@ -37,6 +40,7 @@
       height: calc(100vh - 70px);
     }
 
+    /* Marcador lila */
     .purple-marker {
       background-color: #9b5de5;
       width: 20px;
@@ -46,12 +50,12 @@
       box-shadow: 0 0 12px rgba(155, 93, 229, 0.9);
     }
 
+    /* Animación suave */
     .leaflet-marker-icon {
       transition: transform 0.7s ease;
     }
   </style>
 </head>
-
 <body>
 
   <header>En ruta: ubica tu transporte</header>
@@ -59,6 +63,10 @@
   <div id="map"></div>
 
   <script>
+    /* ===========================================================
+                      🔥  CONFIGURAR FIREBASE
+    ============================================================ */
+
     const firebaseConfig = {
         apiKey: "AIzaSyA5pec-pqAnksqEKocrUv0HImO0H-qINDY",
         authDomain: "pgps-252ee.firebaseapp.com",
@@ -72,12 +80,18 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+
+    /* ===========================================================
+                                MAPA
+    ============================================================ */
+
     const map = L.map("map").setView([25.423, -100.992], 14);
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
     }).addTo(map);
 
+    /* Marcador LILA */
     const purpleIcon = L.divIcon({
       className: "purple-marker",
       iconSize: [20, 20],
@@ -86,6 +100,11 @@
 
     let marker = null;
     let lastPosition = null;
+
+
+    /* ===========================================================
+                    🔄 ACTUALIZAR UBICACIÓN DEL SENDER
+    ============================================================ */
 
     function updateLocation(lat, lng) {
       const newPos = [lat, lng];
@@ -107,6 +126,11 @@
       lastPosition = newPos;
     }
 
+
+    /* ===========================================================
+                 🔥 LISTENER REAL DE FIREBASE
+    ============================================================ */
+
     const activeUnit = "RA";
 
     db.ref("ubicacion/" + activeUnit).on("value", snapshot => {
@@ -115,6 +139,11 @@
 
       updateLocation(data.lat, data.lng);
     });
+
+
+    /* ===========================================================
+                 🟩  RUTA OSRM — VERDE 75% OPACIDAD
+    ============================================================ */
 
     const osrmUrl =
         "https://router.project-osrm.org/route/v1/driving/" +
@@ -140,6 +169,5 @@
       .catch(err => console.error("Error cargando la ruta OSRM:", err));
 
   </script>
-
 </body>
 </html>
