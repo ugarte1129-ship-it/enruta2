@@ -29,7 +29,7 @@ button {
     cursor:pointer;
 }
 
-/* Mensaje mientras no se conecta */
+/* Mensaje inicial */
 #message {
     position: absolute;
     top:50%;
@@ -133,19 +133,26 @@ const message = document.getElementById("message");
 const connectBtn = document.getElementById("connectBtn");
 
 // Coordenadas aproximadas de la ruta RA (La Asunción 215 → Instituto Tecnológico Saltillo)
-// Puedes ajustarlas según OpenStreetMap para más precisión
 const raRouteCoords = [
-    [25.4252, -100.9950], // inicio
-    [25.4245, -100.9942],
-    [25.4239, -100.9935],
-    [25.4230, -100.9917], // fin
+    [25.4252, -100.9950],
+    [25.4248, -100.9945],
+    [25.4240, -100.9935],
+    [25.4235, -100.9928],
+    [25.4230, -100.9917],
+    [25.4230, -100.9910],
+    [25.4235, -100.9900],
+    [25.4245, -100.9890],
+    [25.4255, -100.9885],
+    [25.4265, -100.9880],
+    [25.4275, -100.9875],
+    [25.4285, -100.9870],
+    [25.4295, -100.9865],
+    [25.4305, -100.9860],
+    [25.4315, -100.9855]
 ];
 
 // Dibujar ruta fija RA en amarillo
-function drawRARoute(){
-    routeLine = L.polyline(raRouteCoords, {color:'yellow', weight:5}).addTo(map);
-}
-drawRARoute();
+routeLine = L.polyline(raRouteCoords, {color:'yellow', weight:5}).addTo(map);
 
 // Función mover marcador animado
 function moveMarker(point){
@@ -167,7 +174,7 @@ connectBtn.addEventListener("click", ()=>{
     message.style.display = 'none';
 
     if(activeListener) activeListener.off();
-    activeListener = db.ref("ubicacion/"+busID); // <-- revisa que coincida con tu estructura
+    activeListener = db.ref("ubicacion/"+busID); // <-- Asegúrate que coincida con tu DB
     activeListener.on("value", snapshot=>{
         const data = snapshot.val();
         console.log("Datos recibidos de Firebase:", data);
