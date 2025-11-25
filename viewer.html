@@ -1,148 +1,86 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Live Tracking</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>En ruta</title>
 
-  <!-- Leaflet -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-
-  <style>
+<style>
     body {
-      margin: 0;
-      font-family: "Montserrat", sans-serif;
-      background: #f1ecf7;
+        margin: 0;
+        font-family: Arial, sans-serif;
     }
 
-    /* HEADER — Degradado balanceado, letras blancas */
+    /* HEADER CON DEGRADADO */
     header {
-      background: linear-gradient(
-        90deg,
-        #f7f3ff,
-        #f3effe,
-        #f0ebff,
-        #ede8ff,
-        #e8e2fe,
-        #e2daff
-      );
-      color: white;
-      padding: 18px;
-      text-align: center;
-      font-size: 23px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      box-shadow: 0 2px 15px rgba(0,0,0,0.25);
+        width: 100%;
+        padding: 18px 20px;
+        text-align: center;
+        font-size: 20px;
+        font-weight: bold;
+        color: #ffffff;
+        background: linear-gradient(
+            to right,
+            #f7f3ff,
+            #f3effe,
+            #f0ebff,
+            #ede8ff,
+            #e8e2fe,
+            #e2daff
+        );
+    }
+
+    /* Botón para conectar ubicación */
+    #connectBtn {
+        position: relative;
+        margin: 10px auto;
+        display: block;
+        padding: 10px 18px;
+        background-color: #6c4ef5;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    #connectBtn:hover {
+        background-color: #5a3fe0;
     }
 
     #map {
-      width: 100%;
-      height: calc(100vh - 70px);
+        width: 100%;
+        height: calc(100vh - 120px);
+        background: #ddd;
     }
-
-    .purple-marker {
-      background-color: #9b5de5;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      border: 3px solid white;
-      box-shadow: 0 0 12px rgba(155, 93, 229, 0.9);
-    }
-
-    .leaflet-marker-icon {
-      transition: transform 0.7s ease;
-    }
-  </style>
+</style>
 </head>
+
 <body>
 
-  <header>En ruta: ubica tu transporte</header>
+<header>En ruta: ubica tu transporte</header>
 
-  <div id="map"></div>
+<button id="connectBtn">Conectar</button>
 
-  <script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyA5pec-pqAnksqEKocrUv0HImO0H-qINDY",
-        authDomain: "pgps-252ee.firebaseapp.com",
-        databaseURL: "https://pgps-252ee-default-rtdb.firebaseio.com/",
-        projectId: "pgps-252ee",
-        storageBucket: "pgps-252ee.appspot.com",
-        messagingSenderId: "310435537463",
-        appId: "1:310435537463:web:9a0086d69a05b3b7fb2537"
-    };
+<div id="map"></div>
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    const map = L.map("map").setView([25.423, -100.992], 14);
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-    }).addTo(map);
-
-    const purpleIcon = L.divIcon({
-      className: "purple-marker",
-      iconSize: [20, 20],
-      iconAnchor: [10, 10],
+<script>
+    // Ejemplo básico: botón que pide ubicación
+    document.getElementById("connectBtn").addEventListener("click", () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    console.log("Ubicación conectada:", pos.coords);
+                    alert("Ubicación conectada correctamente");
+                },
+                () => alert("No se pudo obtener la ubicación")
+            );
+        } else {
+            alert("La geolocalización no es compatible en este navegador.");
+        }
     });
+</script>
 
-    let marker = null;
-    let lastPosition = null;
-
-    function updateLocation(lat, lng) {
-      const newPos = [lat, lng];
-
-      if (!marker) {
-        marker = L.marker(newPos, { icon: purpleIcon }).addTo(map);
-        map.setView(newPos, 17);
-        lastPosition = newPos;
-        return;
-      }
-
-      if (lastPosition[0] === lat && lastPosition[1] === lng) return;
-
-      marker.setLatLng(newPos);
-      map.panTo(newPos);
-
-      lastPosition = newPos;
-    }
-
-    const activeUnit = "RA";
-
-    db.ref("ubicacion/" + activeUnit).on("value", snapshot => {
-      const data = snapshot.val();
-      if (!data || !data.lat || !data.lng) return;
-      updateLocation(data.lat, data.lng);
-    });
-
-    const osrmUrl =
-        "https://router.project-osrm.org/route/v1/driving/" +
-        "-100.9468,25.4530;" +
-        "-100.9917106,25.4415147;" +
-        "-100.96143732,25.44356175;" +
-        "-100.9468,25.4530" +
-        "?overview=full&geometries=geojson&steps=false";
-
-    fetch(osrmUrl)
-      .then(response => response.json())
-      .then(data => {
-        const coords = data.routes[0].geometry.coordinates;
-        const latlngs = coords.map(c => [c[1], c[0]]);
-
-        L.polyline(latlngs, {
-            color: "rgba(53, 209, 111, 0.75)",
-            weight: 5
-        }).addTo(map);
-      })
-      .catch(err => console.error("Error cargando la ruta OSRM:", err));
-  </script>
 </body>
 </html>
