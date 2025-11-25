@@ -23,56 +23,24 @@
       background: #f1ecf7;
     }
 
-    /* === HEADER estilo de la captura === */
+    /* HEADER degradado lila */
     header {
-      background: linear-gradient(90deg, #c39bff, #9b5de5, #7a3fe0);
+      background: linear-gradient(90deg, #b086f7, #9b5de5, #7a3fe0);
       color: white;
+      padding: 18px;
       text-align: center;
-      padding: 18px 0 10px;
-      font-size: 22px;
+      font-size: 23px;
       font-weight: 600;
-      box-shadow: 0 2px 18px rgba(0, 0, 0, 0.25);
-    }
-
-    /* Barra blanca debajo del título */
-    .route-bar {
-      width: 100%;
-      background: white;
-      padding: 14px 0;
-      display: flex;
-      justify-content: center;
-      gap: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    }
-
-    select {
-      padding: 10px 14px;
-      font-size: 15px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      outline: none;
-    }
-
-    button {
-      padding: 10px 18px;
-      border: none;
-      border-radius: 8px;
-      background: #8b4fe3;
-      color: white;
-      font-size: 15px;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    button:hover {
-      background: #732fd4;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 15px rgba(0,0,0,0.25);
     }
 
     #map {
       width: 100%;
-      height: calc(100vh - 120px);
+      height: calc(100vh - 70px);
     }
 
-    /* Marcador morado */
+    /* Marcador lila */
     .purple-marker {
       background-color: #9b5de5;
       width: 20px;
@@ -82,6 +50,7 @@
       box-shadow: 0 0 12px rgba(155, 93, 229, 0.9);
     }
 
+    /* Animación suave */
     .leaflet-marker-icon {
       transition: transform 0.7s ease;
     }
@@ -89,24 +58,14 @@
 </head>
 <body>
 
-  <header>En ruta: Ubica tu transporte</header>
-
-  <div class="route-bar">
-    <select id="routeSelector">
-      <option value="RA">RA</option>
-      <option value="RP">RP</option>
-      <option value="RV">RV</option>
-      <option value="RS">RS</option>
-    </select>
-    <button id="connectBtn">Conectar</button>
-  </div>
+  <header>Seguimiento en Vivo</header>
 
   <div id="map"></div>
 
   <script>
-    /* ===========================================
-                FIREBASE CONFIG
-    ============================================ */
+    /* ===========================================================
+                      🔥  CONFIGURAR FIREBASE
+    ============================================================ */
 
     const firebaseConfig = {
         apiKey: "AIzaSyA5pec-pqAnksqEKocrUv0HImO0H-qINDY",
@@ -122,9 +81,9 @@
     const db = firebase.database();
 
 
-    /* ===========================================
-                      MAPA
-    ============================================ */
+    /* ===========================================================
+                                MAPA
+    ============================================================ */
 
     const map = L.map("map").setView([25.423, -100.992], 14);
 
@@ -132,6 +91,7 @@
       maxZoom: 19,
     }).addTo(map);
 
+    /* Marcador LILA */
     const purpleIcon = L.divIcon({
       className: "purple-marker",
       iconSize: [20, 20],
@@ -140,12 +100,16 @@
 
     let marker = null;
     let lastPosition = null;
-    let activeUnit = "RA"; // por defecto
 
+
+    /* ===========================================================
+                    🔄 ACTUALIZAR UBICACIÓN DEL SENDER
+    ============================================================ */
 
     function updateLocation(lat, lng) {
       const newPos = [lat, lng];
 
+      // 1st update → crear marcador
       if (!marker) {
         marker = L.marker(newPos, { icon: purpleIcon }).addTo(map);
         map.setView(newPos, 17);
@@ -153,8 +117,12 @@
         return;
       }
 
-      if (lastPosition[0] === lat && lastPosition[1] === lng) return;
+      // Si no se movió, no animar ni mover
+      if (lastPosition[0] === lat && lastPosition[1] === lng) {
+        return;
+      }
 
+      // Movimiento suave
       marker.setLatLng(newPos);
       map.panTo(newPos);
 
@@ -162,46 +130,49 @@
     }
 
 
-    /* ===========================================
-                CAMBIO DE ROUTE + CONEXIÓN
-    ============================================ */
+    /* ===========================================================
+                 🔥 LISTENER REAL DE FIREBASE (SIN SIMULACIONES)
+    ============================================================ */
 
-    document.getElementById("connectBtn").onclick = () => {
-      activeUnit = document.getElementById("routeSelector").value;
+    // Unidad RA (puedes cambiar la unidad)
+    const activeUnit = "RA";
 
-      db.ref("ubicacion/" + activeUnit).on("value", snap => {
-        const data = snap.val();
-        if (!data) return;
+    db.ref("ubicacion/" + activeUnit).on("value", snapshot => {
+      const data = snapshot.val();
+      if (!data || !data.lat || !data.lng) return;
 
-        updateLocation(data.lat, data.lng);
-      });
-    };
+      updateLocation(data.lat, data.lng);
+    });
 
 
-    /* ===========================================
-              LÍNEA VERDE TRASLÚCIDA 75%
-    ============================================ */
+    /* ===========================================================
+                 🟩  RUTA OSRM — VERDE 75% OPACIDAD
+    ============================================================ */
 
     const osrmUrl =
         "https://router.project-osrm.org/route/v1/driving/" +
-        "-100.9468,25.4530;" +
-        "-100.9917106,25.4415147;" +
-        "-100.96143732,25.44356175;" +
-        "-100.9468,25.4530" +
+        "-100.9468,25.4530;" +          // La Asunción 215
+        "-100.9917106,25.4415147;" +    // ITS
+        "-100.96143732,25.44356175;" +  // Plaza Patio Sendero
+        "-100.9468,25.4530" +           // Regreso
         "?overview=full&geometries=geojson&steps=false";
 
     fetch(osrmUrl)
-      .then(res => res.json())
+      .then(response => response.json())
       .then(data => {
+
         const coords = data.routes[0].geometry.coordinates;
         const latlngs = coords.map(c => [c[1], c[0]]);
 
+        // 🟢 Línea verde pastel 75% opacidad
         L.polyline(latlngs, {
-          color: "rgba(53, 209, 111, 0.75)",  /* VERDE 75% */
-          weight: 5
+            color: "rgba(53, 209, 111, 0.75)",  // ← Verde pastel traslúcido
+            weight: 5
         }).addTo(map);
-      });
-  </script>
 
+      })
+      .catch(err => console.error("Error cargando la ruta OSRM:", err));
+
+  </script>
 </body>
 </html>
