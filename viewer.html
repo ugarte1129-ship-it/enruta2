@@ -2,28 +2,13 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Viewer Rutas RA</title>
+<title>Viewer En Ruta</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
 body { margin:0; font-family: Arial, sans-serif; }
 #map { height:100vh; width:100vw; position: relative; }
 
-/* Mensaje flotante central */
-#message {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 24px;
-    color: #555;
-    z-index: 1000;
-    background: rgba(255,255,255,0.85);
-    padding: 12px 20px;
-    border-radius: 10px;
-    text-align: center;
-}
-
-/* Selector unidad */
+/* Selector panel */
 .selector {
     position: absolute;
     top: 15px;
@@ -34,7 +19,30 @@ body { margin:0; font-family: Arial, sans-serif; }
     z-index: 1000;
     box-shadow: 0px 3px 8px rgba(0,0,0,0.15);
 }
-select { padding: 8px; width: 160px; }
+select { padding: 8px; width: 160px; margin-right:10px; }
+button {
+    padding: 8px 16px;
+    background-color: #9b59b6;
+    color:white;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+/* Mensaje mientras no se conecta */
+#message {
+    position: absolute;
+    top:50%;
+    left:50%;
+    transform: translate(-50%, -50%);
+    font-size:24px;
+    color:#555;
+    z-index:1000;
+    background: rgba(255,255,255,0.85);
+    padding: 12px 20px;
+    border-radius:10px;
+    text-align:center;
+}
 
 /* Marcador lila animado */
 .loader {
@@ -70,15 +78,16 @@ select { padding: 8px; width: 160px; }
 }
 @keyframes animMarker {0% {transform: rotate(45deg) translate(5px,5px);} 100% {transform: rotate(45deg) translate(-5px,-5px);}}
 @keyframes animShadow {0% {transform: scale(0.5);} 100% {transform: scale(1);}}
-/* Fondo gris claro del mapa */
+
 .leaflet-tile { filter: grayscale(60%) brightness(110%); }
 </style>
 </head>
 <body>
 
-<div id="message">Selecciona la unidad para comenzar a enviar tu ubicación</div>
+<div id="message">Ubica tu ruta</div>
 
 <div class="selector">
+<label>En ruta: ubica tu transporte</label><br>
 <select id="unitSelect">
 <option value="">Selecciona unidad</option>
 <option value="RA">RA</option>
@@ -86,6 +95,7 @@ select { padding: 8px; width: 160px; }
 <option value="RV">RV</option>
 <option value="RS">RS</option>
 </select>
+<button id="connectBtn">Conectar</button>
 </div>
 
 <div id="map"></div>
@@ -95,74 +105,6 @@ select { padding: 8px; width: 160px; }
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
 <script>
-// Configuración Firebase
+// Firebase config
 const firebaseConfig = {
-    apiKey: "AIzaSyA5pec-pqAnksqEKocrUv0HImO0H-qINDY",
-    authDomain: "pgps-252ee.firebaseapp.com",
-    databaseURL: "https://pgps-252ee-default-rtdb.firebaseio.com/",
-    projectId: "pgps-252ee",
-    storageBucket: "pgps-252ee.appspot.com",
-    messagingSenderId: "310435537463",
-    appId: "1:310435537463:web:9a0086d69a05b3b7fb2537"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-// Inicializar mapa
-const map = L.map('map').setView([25.423, -100.992],14);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap'
-}).addTo(map);
-
-// Ruta amarilla RA
-const routeRA = [
-    [25.4252, -100.9950], 
-    [25.4245, -100.9940],
-    [25.4240, -100.9932],
-    [25.4235, -100.9925],
-    [25.4230, -100.9920]
-];
-L.polyline(routeRA, {color:'yellow', weight:5}).addTo(map);
-
-let marker = null;
-const unitSelect = document.getElementById("unitSelect");
-const message = document.getElementById("message");
-let activeListener = null;
-
-// Función para mover marcador
-function moveMarker(point){
-    if(!marker){
-        marker = L.marker(point, {
-            icon: L.divIcon({className:'loader', iconSize:[48,48], iconAnchor:[24,48]})
-        }).addTo(map);
-    } else {
-        marker.setLatLng(point);
-    }
-    map.setView(point,15);
-}
-
-// Escuchar selección de unidad
-unitSelect.addEventListener("change", function(){
-    const busID = this.value;
-
-    if(activeListener) activeListener.off();
-
-    if(busID === "RA"){
-        message.style.display = 'none'; // ocultar texto
-        activeListener = db.ref("ubicaciones/"+busID);
-        activeListener.on("value", snapshot=>{
-            const data = snapshot.val();
-            if(!data || !data.lat || !data.lng) return;
-            moveMarker([data.lat, data.lng]);
-        });
-    } else {
-        message.style.display = 'block'; // mostrar texto
-        if(marker) map.removeLayer(marker);
-        marker = null;
-    }
-});
-</script>
-
-</body>
-</html>
+    apiKey: "AIzaSyA5pec-pq
