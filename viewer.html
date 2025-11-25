@@ -2,88 +2,58 @@
 
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Viewer de Rutas</title>
+<meta charset="UTF-8">
+<title>Viewer de Rutas</title>
 
-```
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
 <style>
-    body {
-        margin: 0;
-        font-family: Arial, sans-serif;
-    }
-    #map {
-        height: 100vh;
-        width: 100vw;
-    }
+    body { margin:0; font-family:Arial, sans-serif; }
+    #map { height:100vh; width:100vw; }
     .selector {
-        position: absolute;
-        top: 15px;
-        left: 15px;
-        background: white;
-        padding: 12px;
-        border-radius: 12px;
-        z-index: 1000;
-        box-shadow: 0px 3px 8px rgba(0,0,0,0.15);
+        position:absolute; top:15px; left:15px; background:white;
+        padding:12px; border-radius:12px; z-index:1000;
+        box-shadow:0px 3px 8px rgba(0,0,0,0.15);
     }
-    select {
-        padding: 8px;
-        width: 140px;
-    }
+    select { padding:8px; width:140px; }
 
     /* Marcador animado lila */
     .loader {
-        width: 48px;
-        height: 48px;
-        display: block;
-        position: relative;
-        transform: translate(-50%, -50%);
+        width:48px; height:48px;
+        display:block;
+        position:relative;
+        transform:translate(-50%, -50%);
     }
-
     .loader::after {
-        content: '';
-        width: 48px;
-        height: 48px;
-        left: 0;
-        bottom: 0;
-        position: absolute;
-        border-radius: 50% 50% 0;
-        border: 15px solid #9b59b6; /* lila */
-        transform: rotate(45deg) translate(0, 0);
-        box-sizing: border-box;
-        animation: animMarker 0.4s ease-in-out infinite alternate;
+        content:'';
+        width:48px; height:48px;
+        left:0; bottom:0; position:absolute;
+        border-radius:50% 50% 0;
+        border:15px solid #9b59b6; /* lila */
+        transform:rotate(45deg) translate(0,0);
+        box-sizing:border-box;
+        animation:animMarker 0.4s ease-in-out infinite alternate;
     }
-
     .loader::before {
-        content: '';
-        box-sizing: border-box;
-        position: absolute;
-        left: 0;
-        right: 0;
-        margin: auto;
-        top: 150%;
-        width: 24px;
-        height: 4px;
-        border-radius: 50%;
-        background: rgba(0, 0, 0, 0.2);
-        animation: animShadow 0.4s ease-in-out infinite alternate;
+        content:'';
+        box-sizing:border-box;
+        position:absolute;
+        left:0; right:0; margin:auto; top:150%;
+        width:24px; height:4px; border-radius:50%;
+        background:rgba(0,0,0,0.2);
+        animation:animShadow 0.4s ease-in-out infinite alternate;
     }
-
     @keyframes animMarker {
-        0% { transform: rotate(45deg) translate(5px, 5px); }
-        100% { transform: rotate(45deg) translate(-5px, -5px); }
+        0% { transform:rotate(45deg) translate(5px,5px); }
+        100% { transform:rotate(45deg) translate(-5px,-5px); }
     }
-
     @keyframes animShadow {
-        0% { transform: scale(0.5); }
-        100% { transform: scale(1); }
+        0% { transform:scale(0.5); }
+        100% { transform:scale(1); }
     }
 </style>
-```
 
 </head>
-
 <body>
 
 <div class="selector">
@@ -119,43 +89,53 @@
     const db = firebase.database();
 
     // Mapa grisáceo
-    let map = L.map('map').setView([22.15, -100.98], 13);
+    const map = L.map('map').setView([22.15, -100.98], 13);
     L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>',
-        subdomains: 'abcd',
-        maxZoom: 20
+        maxZoom:20
     }).addTo(map);
 
     let marker = null;
+    let polyline = null;
+    let path = [];
     let activeListener = null;
 
     const unitSelect = document.getElementById("unitSelect");
 
-    unitSelect.addEventListener("change", function () {
-        const busID = this.value;
+    unitSelect.addEventListener("change", () => {
+        const busID = unitSelect.value;
         if (!busID) return;
 
         if (activeListener) activeListener.off();
 
+        // Reiniciar ruta
+        path = [];
+        if(polyline) map.removeLayer(polyline);
+
         activeListener = db.ref("ubicaciones/" + busID);
         activeListener.on("value", snapshot => {
             const data = snapshot.val();
-            console.log("Datos recibidos:", data);
             if (!data || !data.lat || !data.lng) return;
 
-            const { lat, lng } = data;
+            const latlng = [data.lat, data.lng];
+            path.push(latlng);
 
-            // Crear marcador con divIcon personalizado lila
-            if (!marker) {
-                const customIcon = L.divIcon({
-                    className: 'loader'
-                });
-                marker = L.marker([lat, lng], {icon: customIcon}).addTo(map);
+            // Dibujar o actualizar polyline
+            if(!polyline) {
+                polyline = L.polyline(path, {color:'#9b59b6', weight:5}).addTo(map);
             } else {
-                marker.setLatLng([lat, lng]);
+                polyline.setLatLngs(path);
             }
 
-            map.setView([lat, lng], 15);
+            // Crear o mover marcador animado
+            if(!marker) {
+                const customIcon = L.divIcon({className:'loader'});
+                marker = L.marker(latlng, {icon:customIcon}).addTo(map);
+            } else {
+                marker.setLatLng(latlng);
+            }
+
+            map.setView(latlng, 15);
         });
     });
 </script>
