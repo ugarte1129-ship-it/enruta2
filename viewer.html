@@ -75,7 +75,7 @@ select { padding: 8px; width: 140px; }
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
 <script>
-// Firebase config
+// Configuración de Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyA5pec-pqAnksqEKocrUv0HImO0H-qINDY",
     authDomain: "pgps-252ee.firebaseapp.com",
@@ -104,57 +104,13 @@ let activeListener = null;
 // Tu API Key de OpenRouteService
 const ORS_API_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjVhOTAwMjNlMjM2ZDQyMzZhYjI2YjhkMzYzN2ZiMjcyIiwiaCI6Im11cm11cjY0In0=";
 
-// Función para obtener ruta calle por calle
 async function getRoute(start, end){
     const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${ORS_API_KEY}&start=${start[1]},${start[0]}&end=${end[1]},${end[0]}`;
     const res = await fetch(url);
     const data = await res.json();
     const coords = data.features[0].geometry.coordinates;
-    return coords.map(c => [c[1], c[0]]); // invertir lat/lng
+    return coords.map(c => [c[1], c[0]]);
 }
 
-// Mover marcador lila
 async function moveMarker(newPoint){
-    if(!marker){
-        marker = L.marker(newPoint, {
-            icon: L.divIcon({className:'loader', iconSize:[48,48], iconAnchor:[24,48]})
-        }).addTo(map);
-    } else {
-        marker.setLatLng(newPoint);
-    }
-    map.setView(newPoint,15);
-}
-
-// Selector de unidad
-const unitSelect = document.getElementById("unitSelect");
-
-unitSelect.addEventListener("change", function(){
-    const busID = this.value;
-    if(!busID) return;
-    if(activeListener) activeListener.off();
-
-    activeListener = db.ref("ubicaciones/"+busID);
-    activeListener.on("value", async snapshot=>{
-        const data = snapshot.val();
-        if(!data || !data.lat || !data.lng) return;
-        const newPoint = [data.lat, data.lng];
-
-        if(lastPoint){
-            // Obtener ruta calle por calle entre puntos
-            const route = await getRoute(lastPoint, newPoint);
-            path = path.concat(route);
-            if(!polyline){
-                polyline = L.polyline(path,{color:'#9b59b6', weight:4}).addTo(map);
-            } else {
-                polyline.setLatLngs(path);
-            }
-        }
-
-        await moveMarker(newPoint);
-        lastPoint = newPoint;
-    });
-});
-</script>
-
-</body>
-</html>
+    if(!mar
