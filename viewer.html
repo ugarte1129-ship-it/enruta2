@@ -134,8 +134,7 @@
                  🔥 LISTENER REAL DE FIREBASE (SIN SIMULACIONES)
     ============================================================ */
 
-    // Unidad RA (puedes cambiar la unidad)
-    const activeUnit = "RA";
+    const activeUnit = "RA";  // Unidad real en tu DB
 
     db.ref("ubicacion/" + activeUnit).on("value", snapshot => {
       const data = snapshot.val();
@@ -146,15 +145,15 @@
 
 
     /* ===========================================================
-                 🟩  RUTA OSRM EN COLOR VERDE (75% OPACIDAD)
+                 🟩  RUTA OSRM VERDE (75% OPACIDAD)
     ============================================================ */
 
     const osrmUrl =
         "https://router.project-osrm.org/route/v1/driving/" +
-        "-100.9468,25.4530;" +          // La Asunción 215
-        "-100.9917106,25.4415147;" +    // ITS
-        "-100.96143732,25.44356175;" +  // Plaza Patio Sendero
-        "-100.9468,25.4530" +           // Regreso
+        "-100.9468,25.4530;" +
+        "-100.9917106,25.4415147;" +
+        "-100.96143732,25.44356175;" +
+        "-100.9468,25.4530" +
         "?overview=full&geometries=geojson&steps=false";
 
     fetch(osrmUrl)
@@ -164,11 +163,10 @@
         const coords = data.routes[0].geometry.coordinates;
         const latlngs = coords.map(c => [c[1], c[0]]);
 
-        // ✅ Línea verde con 75% de opacidad
+        // 🔥 Línea verde pastel 75% opacidad
         L.polyline(latlngs, {
-            color: '#35d16f',
-            weight: 5,
-            opacity: 0.75
+            color: 'rgba(53, 209, 111, 0.75)',  // verde pastel 75% opaco
+            weight: 5
         }).addTo(map);
 
       })
