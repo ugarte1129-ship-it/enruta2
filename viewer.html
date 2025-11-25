@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -52,7 +51,6 @@
         100% { transform:scale(1); }
     }
 </style>
-
 </head>
 <body>
 
@@ -69,13 +67,11 @@
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
 <script>
-    // Firebase
+    // Configuración de Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyA5pec-pqAnksqEKocrUv0HImO0H-qINDY",
         authDomain: "pgps-252ee.firebaseapp.com",
@@ -88,11 +84,11 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Mapa grisáceo
+    // Inicializar mapa gris
     const map = L.map('map').setView([22.15, -100.98], 13);
     L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>',
-        maxZoom:20
+        maxZoom: 20
     }).addTo(map);
 
     let marker = null;
@@ -106,7 +102,8 @@
         const busID = unitSelect.value;
         if (!busID) return;
 
-        if (activeListener) activeListener.off();
+        // Detener listener anterior
+        if(activeListener) activeListener.off();
 
         // Reiniciar ruta
         path = [];
@@ -120,15 +117,15 @@
             const latlng = [data.lat, data.lng];
             path.push(latlng);
 
-            // Dibujar o actualizar polyline
-            if(!polyline) {
-                polyline = L.polyline(path, {color:'#9b59b6', weight:5}).addTo(map);
+            // Crear o actualizar polyline
+            if(!polyline){
+                polyline = L.polyline(path, {color:'#9b59b6', weight:5, smoothFactor:1}).addTo(map);
             } else {
                 polyline.setLatLngs(path);
             }
 
             // Crear o mover marcador animado
-            if(!marker) {
+            if(!marker){
                 const customIcon = L.divIcon({className:'loader'});
                 marker = L.marker(latlng, {icon:customIcon}).addTo(map);
             } else {
