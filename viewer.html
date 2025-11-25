@@ -31,6 +31,54 @@
         padding: 8px;
         width: 140px;
     }
+
+    /* Marcador animado lila */
+    .loader {
+        width: 48px;
+        height: 48px;
+        display: block;
+        position: relative;
+        transform: translate(-50%, -50%);
+    }
+
+    .loader::after {
+        content: '';
+        width: 48px;
+        height: 48px;
+        left: 0;
+        bottom: 0;
+        position: absolute;
+        border-radius: 50% 50% 0;
+        border: 15px solid #9b59b6; /* lila */
+        transform: rotate(45deg) translate(0, 0);
+        box-sizing: border-box;
+        animation: animMarker 0.4s ease-in-out infinite alternate;
+    }
+
+    .loader::before {
+        content: '';
+        box-sizing: border-box;
+        position: absolute;
+        left: 0;
+        right: 0;
+        margin: auto;
+        top: 150%;
+        width: 24px;
+        height: 4px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.2);
+        animation: animShadow 0.4s ease-in-out infinite alternate;
+    }
+
+    @keyframes animMarker {
+        0% { transform: rotate(45deg) translate(5px, 5px); }
+        100% { transform: rotate(45deg) translate(-5px, -5px); }
+    }
+
+    @keyframes animShadow {
+        0% { transform: scale(0.5); }
+        100% { transform: scale(1); }
+    }
 </style>
 ```
 
@@ -57,7 +105,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
 <script>
-    // Configuración de Firebase
+    // Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyA5pec-pqAnksqEKocrUv0HImO0H-qINDY",
         authDomain: "pgps-252ee.firebaseapp.com",
@@ -67,13 +115,16 @@
         messagingSenderId: "310435537463",
         appId: "1:310435537463:web:9a0086d69a05b3b7fb2537"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Inicializar mapa
+    // Mapa grisáceo
     let map = L.map('map').setView([22.15, -100.98], 13);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+    L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>',
+        subdomains: 'abcd',
+        maxZoom: 20
+    }).addTo(map);
 
     let marker = null;
     let activeListener = null;
@@ -82,26 +133,24 @@
 
     unitSelect.addEventListener("change", function () {
         const busID = this.value;
-
         if (!busID) return;
 
-        // Desactivar listener anterior
-        if (activeListener) {
-            activeListener.off();
-        }
+        if (activeListener) activeListener.off();
 
-        // Crear nuevo listener
         activeListener = db.ref("ubicaciones/" + busID);
         activeListener.on("value", snapshot => {
             const data = snapshot.val();
             console.log("Datos recibidos:", data);
-
             if (!data || !data.lat || !data.lng) return;
 
             const { lat, lng } = data;
 
+            // Crear marcador con divIcon personalizado lila
             if (!marker) {
-                marker = L.marker([lat, lng]).addTo(map);
+                const customIcon = L.divIcon({
+                    className: 'loader'
+                });
+                marker = L.marker([lat, lng], {icon: customIcon}).addTo(map);
             } else {
                 marker.setLatLng([lat, lng]);
             }
