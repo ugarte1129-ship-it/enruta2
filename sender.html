@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Registro de Autobús</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #f8f4ff, #e0d7ff);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        h2 { 
+            color: #4b3c8c; 
+            margin-bottom: 10px;
+        }
+        form {
+            background: #fff;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            width: 300px;
+            text-align: center;
+        }
+        select {
+            padding: 12px;
+            margin: 10px 0;
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+        }
+        button {
+            padding: 15px;
+            width: 100%;
+            font-size: 16px;
+            border-radius: 12px;
+            border: none;
+            background: #9c7aff;
+            color: #fff;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        button:hover { transform: scale(1.05); }
+    </style>
+</head>
+<body>
+
+    <h2>Registro de Autobús</h2>
+
+    <form onsubmit="startTracking(); return false;">
+        <label>Unidad:</label>
+
+        <select id="busID" required>
+            <option value="" disabled selected>Selecciona la unidad</option>
+            <option value="RA">RA</option>
+            <option value="RP">RP</option>
+            <option value="RV">RV</option>
+            <option value="RS">RS</option>
+        </select>
+
+        <button type="submit">Iniciar</button>
+    </form>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCqGWieJ2KwAX7WBaSh44Qtvy82tL5L7V0",
+            authDomain: "pgps-252ee.firebaseapp.com",
+            databaseURL: "https://pgps-252ee-default-rtdb.firebaseio.com/",
+            projectId: "pgps-252ee",
+            storageBucket: "pgps-252ee.appspot.com",
+            messagingSenderId: "780179119010",
+            appId: "1:780179119010:web:68eca216634658d056a45d"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function startTracking() {
+            const busID = document.getElementById("busID").value;
+
+            if (!busID) {
+                alert("Selecciona una unidad válida.");
+                return;
+            }
+
+            if (!navigator.geolocation) {
+                alert("Tu navegador no soporta geolocalización.");
+                return;
+            }
+
+            navigator.geolocation.watchPosition(
+                (pos) => {
+                    db.ref("ubicacion/" + busID).set({
+                        lat: pos.coords.latitude,
+                        lng: pos.coords.longitude,
+                        timestamp: Date.now()
+                    });
+                },
+                (err) => alert("Error obteniendo ubicación: " + err.message),
+                { enableHighAccuracy: true }
+            );
+
+            alert("Enviando ubicación para la unidad: " + busID);
+        }
+    </script>
+
+</body>
+</html>

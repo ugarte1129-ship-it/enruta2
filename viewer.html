@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>En ruta: Ubica tu transporte</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+    <style>
+        body { margin:0; font-family: Arial; background:#f8f4ff; }
+        header {
+            text-align:center; padding:18px; background:#9c7aff; color:#fff;
+            font-size:22px; font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.1);
+        }
+        #controls {
+            padding:12px; text-align:center; background:#f3edff;
+        }
+        select {
+            padding:10px; width:180px; border-radius:10px; border:1px solid #ccc;
+            font-size:14px;
+        }
+        button {
+            padding:10px 18px; border:none; background:#4b3c8c; color:#fff;
+            border-radius:10px; cursor:pointer;
+        }
+        #map { height: 87vh; }
+
+        /* Marcador animado morado */
+        .loader {
+          width: 48px; height: 48px; display: block; position: relative;
+        }
+        .loader::after {
+          content: ''; width:48px; height:48px; position:absolute;
+          border-radius:50% 50% 0; border:15px solid #9c7aff;
+          transform: rotate(45deg); animation: anim 0.5s infinite alternate ease-in-out;
+        }
+        @keyframes anim {
+          from { transform: rotate(45deg) translate(4px,4px); }
+          to   { transform: rotate(45deg) translate(-4px,-4px); }
+        }
+    </style>
+</head>
+<body>
+
+<header>En ruta: Ubica tu transporte</header>
+
+<div id="controls">
+    <select id="rutaSelect">
+        <option value="">Seleccionar unidad</option>
+        <option value="RA">RA</option>
+        <option value="RP">RP</option>
+        <option value="RV">RV</option>
+        <option value="RS">RS</option>
+    </select>
+    <button id="btnConnect">Ver ruta</button>
+</div>
+
+<div id="map"></div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Firebase compat -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+<script>
+/* ------------------------------------------------
+   Firebase
+-------------------------------------------------- */
+const firebaseConfig = {
+    apiKey: "AIzaSyCqGWieJ2KwAX7WBaSh44Qtvy82tL5L7V0",
+    authDomain: "pgps-252ee.firebaseapp.com",
+    databaseURL: "https://pgps-252ee-default-rtdb.firebaseio.com/",
+    projectId: "pgps-252ee",
+    storageBucket: "pgps-252ee.appspot.com",
+    messagingSenderId: "780179119010",
+    appId: "1:780179119010:web:68eca216634658d056a45d"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+/* ------------------------------------------------
+   Mapa
+-------------------------------------------------- */
+const map = L.map("map").setView([19.4326,-99.1332], 13);
+L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+    subdomains:"abcd", maxZoom:19
+}).addTo(map);
+
+const ROUTE_COLORS = {
+    RA:"#bda3ff",
+    RP:"#ff9bd5",
+    RV:"#ffb77a",
+    RS:"#ffe88b"
+};
+
+/* Icono animado */
+const truckIcon = L.divIcon({
+    className: "",
+    html: '<div class="loader"></div>',
+    iconSize:[48,48],
+    iconAnchor:[24,48]
+});
+
+/* Datos */
+let listener = null;
+let marker = null;
+let polyline = null;
+let path = [];
+
+/* ------------------------------------------------
+   Conectar a una ruta (RA / RP / RV / RS)
+-------------------------------------------------- */
+document.getElementById("btnConnect").onclick = () => {
+    const ruta = document.getElementById("rutaSelect").value;
+    if (!ruta) { alert("Selecciona una unidad"); return; }
+
+    if (listener) db.ref("ubicacion").off("value", listener);
+
+    // limpiar mapa
+    if (marker) map.removeLayer(marker);
+    if (polyline) map.removeLayer(polyline);
+    marker = null;
+    polyline = null;
+    path = [];
+
+    const color = ROUTE_COLORS[ruta];
+
+    listener = db.ref("ubicacion").on("value", snap => {
+        const data = snap.val() || {};
+        Object.keys(data).forEach(id => {
+            if (!id.startsWith(ruta)) return;
+
+            const p = data[id];
+            if (!p || !p.lat || !p.lng) return;
+
+            const lat = p.lat;
+            const lng = p.lng;
+
+            path.push([lat,lng]);
+
+            if (!marker) {
+                marker = L.marker([lat,lng], { icon:truckIcon }).addTo(map);
+                map.setView([lat,lng], 15);
+            } else {
+                marker.setLatLng([lat,lng]);
+            }
+
+            if (!polyline) {
+                polyline = L.polyline(path, { color:color, weight:5 }).addTo(map);
+            } else {
+                polyline.setLatLngs(path);
+            }
+        });
+    });
+};
+
+/* ------------------------------------------------
+   Ubicación del usuario
+-------------------------------------------------- */
+let userMarker = null;
+let userCircle = null;
+
+if (navigator.geolocation) {
+    navigator.geolocation.watchPosition(pos => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const acc = pos.coords.accuracy || 25;
+
+        if (!userMarker) {
+            userMarker = L.circleMarker([lat,lng], {
+                radius:7, color:"#4b7bff", fillColor:"#4b7bff", fillOpacity:0.9
+            }).addTo(map);
+
+            userCircle = L.circle([lat,lng], {
+                radius:acc, color:"#4b7bff", fillColor:"#4b7bff", fillOpacity:0.12
+            }).addTo(map);
+        } else {
+            userMarker.setLatLng([lat,lng]);
+            userCircle.setLatLng([lat,lng]);
+            userCircle.setRadius(acc);
+        }
+    }, err => console.warn(err), { enableHighAccuracy:true });
+}
+</script>
+
+</body>
+</html>
