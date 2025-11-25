@@ -2,59 +2,72 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Registro de Autobús</title>
+    <title>Registro de Unidad</title>
+
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #f8f4ff, #e0d7ff);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
             margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #f7f3ff, #e1d9ff);
+            font-family: Arial, sans-serif;
         }
-        h2 { 
-            color: #4b3c8c; 
-            margin-bottom: 20px;
-        }
-        form {
-            background: #fff;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            width: 280px;
+
+        .card {
+            width: 320px;
+            background: white;
+            padding: 30px 25px;
+            border-radius: 18px;
+            box-shadow: 0px 4px 10px rgba(0,0,0,0.10);
             text-align: center;
         }
-        select, input {
+
+        h2 {
+            margin: 0 0 10px;
+            color: #4b3c8c;
+            font-size: 22px;
+        }
+
+        p {
+            margin: 0 0 20px;
+            color: #6f63a8;
+            font-size: 14px;
+        }
+
+        select {
+            width: 100%;
             padding: 12px;
-            margin: 10px 0;
-            width: 100%;
-            border-radius: 10px;
-            border: 1px solid #ccc;
-        }
-        button {
-            padding: 15px;
-            width: 100%;
-            font-size: 16px;
             border-radius: 12px;
-            border: none;
-            background: #9c7aff;
-            color: #fff;
-            cursor: pointer;
-            transition: transform 0.2s;
+            border: 1px solid #ccc;
+            margin-bottom: 18px;
+            font-size: 15px;
         }
-        button:hover { transform: scale(1.05); }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: #8b6bff;
+            color: white;
+            font-size: 16px;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body>
 
-    <h2>Registro de Autobús</h2>
+    <div class="card">
+        <h2>Registro de Unidad</h2>
+        <p>Selecciona la unidad para comenzar a enviar tu ubicación.</p>
 
-    <form onsubmit="startTracking(); return false;">
-        <label for="busID">Unidad de Ruta:</label>
-
-        <!-- SELECT DE OPCIONES -->
         <select id="busID" required>
             <option value="">Selecciona la unidad</option>
             <option value="RA">RA</option>
@@ -63,8 +76,8 @@
             <option value="RS">RS</option>
         </select>
 
-        <button type="submit">Iniciar</button>
-    </form>
+        <button onclick="startTracking()">Iniciar</button>
+    </div>
 
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -93,27 +106,17 @@
                 return;
             }
 
-            if (!navigator.geolocation) {
-                alert("Tu navegador no soporta geolocalización");
-                return;
-            }
-
-            alert("Enviando ubicación para la unidad: " + busID);
+            alert("Enviando ubicación en tiempo real para la unidad: " + busID);
 
             navigator.geolocation.watchPosition(
                 pos => {
-                    const lat = pos.coords.latitude;
-                    const lng = pos.coords.longitude;
-
                     db.ref("ubicacion/" + busID).set({
-                        lat: lat,
-                        lng: lng,
+                        lat: pos.coords.latitude,
+                        lng: pos.coords.longitude,
                         timestamp: Date.now()
                     });
                 },
-                err => {
-                    alert("Error obteniendo ubicación: " + err.message);
-                },
+                err => alert("Error: " + err.message),
                 { enableHighAccuracy: true }
             );
         }
