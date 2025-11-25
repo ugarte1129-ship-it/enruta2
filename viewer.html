@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>En Ruta – Ubica tu transporte</title>
+<title>En Ruta – Ubicación en vivo</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
@@ -11,35 +11,35 @@
         margin: 0;
         padding: 0;
         font-family: Arial, sans-serif;
-        overflow: hidden;
     }
 
-    /* ===== HEADER CON DEGRADADO MORADO ===== */
+    /* HEADER degradado lila */
     header {
-        background: linear-gradient(90deg, #6a11cb, #a044ff);
-        color: white;
+        background: linear-gradient(90deg, #b086f7, #9b5de5, #7a3fe0);
+        color: #fff;
         text-align: center;
         padding: 18px 0;
         font-size: 22px;
         font-weight: bold;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.25);
         z-index: 1000;
         position: relative;
     }
 
-    /* ===== SELECTOR ==== */
+    /* Selector */
     .selector {
         position: absolute;
-        top: 75px;
+        top: 80px;
         left: 50%;
         transform: translateX(-50%);
         background: white;
         padding: 14px 20px;
         border-radius: 14px;
-        box-shadow: 0 3px 12px rgba(0,0,0,0.18);
-        z-index: 1000;
         display: flex;
         gap: 12px;
         align-items: center;
+        z-index: 1000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.18);
     }
 
     select {
@@ -49,54 +49,34 @@
     }
 
     button {
-        padding: 9px 20px;
-        background: #7c3aed;
-        color: white;
+        padding: 9px 16px;
         border-radius: 6px;
         border: none;
         cursor: pointer;
+        background: #9b5de5;
+        color: white;
         font-weight: bold;
-        transition: 0.2s;
+        transition: 0.2s ease;
     }
 
     button:hover {
-        background: #5b21b6;
+        background: #7a3fe0;
     }
 
-    /* ===== MAPA ===== */
     #map {
         height: 100vh;
         width: 100vw;
+        margin-top: -10px;
     }
 
-    /* ==== MARCADOR MORADO ANIMADO ===== */
-    .purple-marker .pin {
-        width: 16px;
-        height: 16px;
-        background: #a044ff;
+    /* MARCADOR LILA */
+    .purple-marker {
+        background: #9b5de5;
+        width: 18px;
+        height: 18px;
         border-radius: 50%;
         border: 3px solid white;
-        box-shadow: 0 0 10px #a044ff;
-        position: relative;
-        top: 8px;
-        left: 7px;
-    }
-
-    .purple-marker .pulse {
-        width: 20px;
-        height: 20px;
-        border: 3px solid #a044ff;
-        border-radius: 50%;
-        animation: pulse 1.5s infinite ease-out;
-        position: absolute;
-        top: 4px;
-        left: 4px;
-        opacity: 0.7;
-    }
-
-    @keyframes pulse {
-        0%   { transform: scale(0.6); opacity: 0.9; }
-        100% { transform: scale(1.8); opacity: 0; }
+        box-shadow: 0 0 12px rgba(155,93,229,0.9);
     }
 </style>
 </head>
@@ -106,7 +86,7 @@
 
 <div class="selector">
     <select id="unitSelect">
-        <option value="">ID del Autobús</option>
+        <option value="">Selecciona unidad</option>
         <option value="RA">RA</option>
         <option value="RP">RP</option>
         <option value="RV">RV</option>
@@ -124,7 +104,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
 <script>
-/* ========= FIREBASE CONFIG ========= */
+/* ========= FIREBASE REAL (del código que tu diste) ========= */
 const firebaseConfig = {
     apiKey: "AIzaSyA5pec-pqAnksqEKocrUv0HImO0H-qINDY",
     authDomain: "pgps-252ee.firebaseapp.com",
@@ -145,21 +125,20 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19
 }).addTo(map);
 
-/* ====== ICONO MORADO ANIMADO ====== */
+/* === ICONO LILA === */
 const purpleIcon = L.divIcon({
     className: "purple-marker",
-    html: `
-        <div class="pulse"></div>
-        <div class="pin"></div>
-    `,
-    iconSize: [30, 30],
-    iconAnchor: [15, 30]
+    iconSize: [18, 18],
+    iconAnchor: [9, 9]
 });
 
-let senderMarker = null;
+let marker = null;
+let lastLat = null;
+let lastLng = null;
+
 let activeListener = null;
 
-/* ========= BOTÓN: CONECTAR ======== */
+/* ========= CONECTAR ========= */
 document.getElementById("connectBtn").addEventListener("click", () => {
     const busID = document.getElementById("unitSelect").value;
 
@@ -168,6 +147,7 @@ document.getElementById("connectBtn").addEventListener("click", () => {
         return;
     }
 
+    // quitar listener anterior si existía
     if (activeListener) activeListener.off();
 
     activeListener = db.ref("ubicacion/" + busID);
@@ -177,22 +157,34 @@ document.getElementById("connectBtn").addEventListener("click", () => {
 
         if (!data || !data.lat || !data.lng) return;
 
-        moverMarcador(data.lat, data.lng);
+        actualizarMarcador(data.lat, data.lng);
     });
 
-    alert("Conectado a la unidad " + busID);
+    alert("Conectado a " + busID);
 });
 
-/* ========= FUNCIÓN: MOVER MARCADOR ========= */
-function moverMarcador(lat, lng) {
-    if (!senderMarker) {
-        senderMarker = L.marker([lat, lng], { icon: purpleIcon }).addTo(map);
-    } else {
-        senderMarker.setLatLng([lat, lng]);
+/* ========= ACTUALIZAR MARCADOR SOLO SI CAMBIA ========= */
+function actualizarMarcador(lat, lng) {
+
+    // si no ha cambiado, no moverlo
+    if (lastLat === lat && lastLng === lng) {
+        return;
     }
 
-    map.panTo([lat, lng], { animate: true, duration: 1 });
+    const newPos = [lat, lng];
+
+    if (!marker) {
+        marker = L.marker(newPos, { icon: purpleIcon }).addTo(map);
+        map.setView(newPos, 17);
+    } else {
+        marker.setLatLng(newPos);
+        map.panTo(newPos);
+    }
+
+    lastLat = lat;
+    lastLng = lng;
 }
 </script>
+
 </body>
 </html>
