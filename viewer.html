@@ -23,24 +23,24 @@
       background: #f1ecf7;
     }
 
-    /* HEADER con degradado corregido (predominio tonos claros) */
+    /* HEADER — Degradado balanceado, letras blancas */
     header {
       background: linear-gradient(
         90deg,
-        #f7f3ff 0%,
-        #f3effe 20%,
-        #f0ebff 40%,
-        #ede8ff 60%,
-        #e8e2fe55 80%,
-        #e2daff55 100%
+        #f7f3ff,
+        #f3effe,
+        #f0ebff,
+        #ede8ff,
+        #e8e2fe,
+        #e2daff
       );
-      color: #4b2e83;
+      color: white;
       padding: 18px;
       text-align: center;
       font-size: 23px;
       font-weight: 600;
       letter-spacing: 0.5px;
-      box-shadow: 0 2px 15px rgba(0,0,0,0.15);
+      box-shadow: 0 2px 15px rgba(0,0,0,0.25);
     }
 
     #map {
@@ -48,7 +48,6 @@
       height: calc(100vh - 70px);
     }
 
-    /* Marcador lila */
     .purple-marker {
       background-color: #9b5de5;
       width: 20px;
@@ -112,6 +111,7 @@
 
       marker.setLatLng(newPos);
       map.panTo(newPos);
+
       lastPosition = newPos;
     }
 
