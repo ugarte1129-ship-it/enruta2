@@ -109,7 +109,7 @@
     function updateLocation(lat, lng) {
       const newPos = [lat, lng];
 
-      // 1st update → crear marcador
+      // Primera vez → crear marcador
       if (!marker) {
         marker = L.marker(newPos, { icon: purpleIcon }).addTo(map);
         map.setView(newPos, 17);
@@ -117,7 +117,7 @@
         return;
       }
 
-      // Si no se movió, no animar ni mover
+      // Si no se movió → no hacer nada
       if (lastPosition[0] === lat && lastPosition[1] === lng) {
         return;
       }
@@ -134,8 +134,7 @@
                  🔥 LISTENER REAL DE FIREBASE (SIN SIMULACIONES)
     ============================================================ */
 
-    // Unidad RA (puedes cambiar la unidad)
-    const activeUnit = "RA";
+    const activeUnit = "RA";  // unidad a rastrear
 
     db.ref("ubicacion/" + activeUnit).on("value", snapshot => {
       const data = snapshot.val();
@@ -146,7 +145,7 @@
 
 
     /* ===========================================================
-                 🟩  RUTA OSRM EN COLOR VERDE
+                 🟩  RUTA OSRM — VERDE PASTEL + OPACIDAD
     ============================================================ */
 
     const osrmUrl =
@@ -164,10 +163,11 @@
         const coords = data.routes[0].geometry.coordinates;
         const latlngs = coords.map(c => [c[1], c[0]]);
 
-        // 🔥 Línea verde
+        // 🔥 Verde pastel con opacidad media
         L.polyline(latlngs, {
-            color: '#35d16f',
-            weight: 5
+            color: '#a8f0b5',
+            weight: 6,
+            opacity: 0.55
         }).addTo(map);
 
       })
