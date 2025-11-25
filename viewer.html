@@ -9,101 +9,111 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- Firebase -->
+  <!-- Firebase (compat) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
   <style>
+    /* Referencia de la imagen de diseño (local): /mnt/data/Captura de pantalla 2025-11-24 211700.png */
+
+    :root{
+      --purple-1: #f7f3ff;
+      --purple-2: #f3effe;
+      --purple-3: #f0ebff;
+      --purple-4: #ede8ff;
+      --purple-5: #e8e2fe;
+      --purple-6: #e2daff;
+      --btn-purple: #7a3fe0;
+      --btn-purple-hover: #632bd0;
+    }
+
     body {
       margin: 0;
       font-family: "Montserrat", sans-serif;
       background: #f1ecf7;
     }
 
-    /* HEADER: un poco más sólido, un poco más blanco, degradado VERTICAL */
-    header {
-      background: linear-gradient(
-        180deg,
-        #e8ddff,
-        #e0d2ff,
-        #d7c8ff,
-        #cdbaff
-      );
-      color: white;
-      padding: 18px;
-      text-align: center;
-      font-size: 23px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      box-shadow: 0 2px 15px rgba(0,0,0,0.25);
-    }
-
-    #map {
+    /* HEADER: degradado vertical (de abajo hacia arriba) equilibrado */
+    header.app-header {
       width: 100%;
-      height: calc(100vh - 160px);
+      padding: 18px 20px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: 600;
+      color: #ffffff; /* TITULO BLANCO */
+      /* degradado vertical: empieza con colores claros abajo y sube */
+      background: linear-gradient(
+        to top,
+        var(--purple-1),
+        var(--purple-2),
+        var(--purple-3),
+        var(--purple-4),
+        var(--purple-5),
+        var(--purple-6)
+      );
+      box-shadow: 0 2px 15px rgba(0,0,0,0.15);
     }
 
-    /* 🔥 BARRA DE SELECCIÓN RESTAURADA COMPLETA */
-    .bottom-bar {
+    /* Barra de selección (blanca, centrada) */
+    .control-bar {
       width: 100%;
       background: white;
-      padding: 10px 15px;
-      box-shadow: 0 -2px 10px rgba(0,0,0,0.15);
+      padding: 12px 0;
       display: flex;
-      justify-content: space-between;
+      justify-content: center;
+      gap: 12px;
       align-items: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
       position: relative;
-      z-index: 500;
-      font-weight: 600;
+      z-index: 1000;
     }
 
-    .route-buttons {
-      display: flex;
-      gap: 10px;
+    .control-bar label {
+      font-size: 14px;
+      color: #333;
+      margin-right: 8px;
     }
 
-    .route-btn {
-      padding: 8px 14px;
-      border: none;
-      border-radius: 6px;
-      background: #ece1ff;
-      color: #6b3dbb;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .route-btn:hover {
-      background: #decfff;
-    }
-
-    /* Botón morado de conectar */
-    .btn-connect {
-      background: #8a4dff;
-      color: white;
-      border: none;
-      padding: 10px 18px;
+    select#unitSelect {
+      padding: 8px 12px;
       border-radius: 8px;
+      border: 1px solid #d0d0d0;
       font-size: 15px;
-      cursor: pointer;
+      background: white;
+      outline: none;
+    }
+
+    button#connectBtn {
+      padding: 9px 16px;
+      border-radius: 8px;
+      border: none;
+      background: var(--btn-purple);
+      color: white;
       font-weight: 600;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      transition: 0.2s ease;
+      cursor: pointer;
+      transition: background 0.16s ease;
+    }
+    button#connectBtn:hover {
+      background: var(--btn-purple-hover);
     }
 
-    .btn-connect:hover {
-      background: #7b3fff;
+    /* Map area */
+    #map {
+      width: 100%;
+      height: calc(100vh - (18px*2) - 56px); /* ajusta espacio para header + control-bar */
     }
 
-    /* Marcador lila */
+    /* Marcador lila (estilo original) */
     .purple-marker {
       background-color: #9b5de5;
       width: 20px;
       height: 20px;
       border-radius: 50%;
       border: 3px solid white;
-      box-shadow: 0 0 12px rgba(155, 93, 229, 0.9);
+      box-shadow: 0 0 12px rgba(155,93,229,0.9);
     }
 
+    /* transición suave del icono */
     .leaflet-marker-icon {
       transition: transform 0.7s ease;
     }
@@ -111,139 +121,120 @@
 </head>
 <body>
 
-  <!-- HEADER -->
-  <header>En ruta: ubica tu transporte</header>
+  <header class="app-header">En ruta: ubica tu transporte</header>
 
-  <!-- BARRA RESTAURADA COMPLETA (selector + conectar) -->
-  <div class="bottom-bar">
-    <div class="route-buttons">
-      <button class="route-btn">RA</button>
-      <button class="route-btn">RP</button>
-      <button class="route-btn">RV</button>
-      <button class="route-btn">RS</button>
-    </div>
-
-    <button class="btn-connect" onclick="connectLocation()">Conectar</button>
+  <div class="control-bar">
+    <label for="unitSelect">En ruta: ubica tu transporte</label>
+    <select id="unitSelect" aria-label="Selecciona unidad">
+      <option value="">Selecciona unidad</option>
+      <option value="RA">RA</option>
+      <option value="RP">RP</option>
+      <option value="RV">RV</option>
+      <option value="RS">RS</option>
+    </select>
+    <button id="connectBtn">Conectar</button>
   </div>
 
   <div id="map"></div>
 
-  <script>
-    /* ===========================================================
-                      🔥  CONFIGURAR FIREBASE
-    ============================================================ */
+<script>
+/* ===========================================================
+   CONFIGURACIÓN FIREBASE (sin cambios)
+   =========================================================== */
+const firebaseConfig = {
+    apiKey: "AIzaSyA5pec-pqAnksqEKocrUv0HImO0H-qINDY",
+    authDomain: "pgps-252ee.firebaseapp.com",
+    databaseURL: "https://pgps-252ee-default-rtdb.firebaseio.com/",
+    projectId: "pgps-252ee",
+    storageBucket: "pgps-252ee.appspot.com",
+    messagingSenderId: "310435537463",
+    appId: "1:310435537463:web:9a0086d69a05b3b7fb2537"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyA5pec-pqAnksqEKocrUv0HImO0H-qINDY",
-        authDomain: "pgps-252ee.firebaseapp.com",
-        databaseURL: "https://pgps-252ee-default-rtdb.firebaseio.com/",
-        projectId: "pgps-252ee",
-        storageBucket: "pgps-252ee.appspot.com",
-        messagingSenderId: "310435537463",
-        appId: "1:310435537463:web:9a0086d69a05b3b7fb2537"
-    };
+/* ===========================================================
+   MAPA (sin cambios en la lógica)
+   =========================================================== */
+const map = L.map("map").setView([25.423, -100.992], 14);
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 19,
+}).addTo(map);
 
+/* Marcador lila (igual que antes) */
+const purpleIcon = L.divIcon({
+  className: "purple-marker",
+  iconSize: [20,20],
+  iconAnchor: [10,10]
+});
 
-    /* ===========================================================
-                                MAPA
-    ============================================================ */
+let marker = null;
+let lastPosition = null;
+let activeListener = null;
 
-    const map = L.map("map").setView([25.423, -100.992], 14);
+/* Función para actualizar marcador (idéntica a la que tenías) */
+function updateLocation(lat, lng){
+  const newPos = [lat, lng];
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
+  if(!marker){
+    marker = L.marker(newPos, { icon: purpleIcon }).addTo(map);
+    map.setView(newPos, 17);
+    lastPosition = newPos;
+    return;
+  }
+
+  // si no cambió, no mover
+  if(lastPosition[0] === lat && lastPosition[1] === lng) return;
+
+  marker.setLatLng(newPos);
+  map.panTo(newPos);
+  lastPosition = newPos;
+}
+
+/* Conectar botón: crea/actualiza listener a Firebase para la unidad seleccionada */
+document.getElementById("connectBtn").addEventListener("click", () => {
+  const unit = document.getElementById("unitSelect").value;
+  if(!unit){
+    alert("Selecciona una unidad");
+    return;
+  }
+
+  // desconectar listener anterior si existía
+  if(activeListener) activeListener.off();
+
+  activeListener = db.ref("ubicacion/" + unit);
+  activeListener.on("value", snap => {
+    const data = snap.val();
+    if(!data || !data.lat || !data.lng) return;
+    updateLocation(data.lat, data.lng);
+  });
+});
+
+/* ===========================================================
+   RUTA OSRM — deja tal cual (verde pastel 75% opacidad)
+   =========================================================== */
+const osrmUrl =
+    "https://router.project-osrm.org/route/v1/driving/" +
+    "-100.9468,25.4530;" +
+    "-100.9917106,25.4415147;" +
+    "-100.96143732,25.44356175;" +
+    "-100.9468,25.4530" +
+    "?overview=full&geometries=geojson&steps=false";
+
+fetch(osrmUrl)
+  .then(r => r.json())
+  .then(data => {
+    const coords = data.routes[0].geometry.coordinates;
+    const latlngs = coords.map(c => [c[1], c[0]]);
+
+    L.polyline(latlngs, {
+      color: "rgba(53, 209, 111, 0.75)", // verde pastel 75%
+      weight: 5
     }).addTo(map);
-
-    /* Marcador LILA */
-    const purpleIcon = L.divIcon({
-      className: "purple-marker",
-      iconSize: [20, 20],
-      iconAnchor: [10, 10],
-    });
-
-    let marker = null;
-    let lastPosition = null;
-
-
-    /* ===========================================================
-                    🔄 ACTUALIZAR UBICACIÓN DEL SENDER
-    ============================================================ */
-
-    function updateLocation(lat, lng) {
-      const newPos = [lat, lng];
-
-      if (!marker) {
-        marker = L.marker(newPos, { icon: purpleIcon }).addTo(map);
-        map.setView(newPos, 17);
-        lastPosition = newPos;
-        return;
-      }
-
-      if (lastPosition[0] === lat && lastPosition[1] === lng) return;
-
-      marker.setLatLng(newPos);
-      map.panTo(newPos);
-
-      lastPosition = newPos;
-    }
-
-    /* ===========================================================
-                    🔥 LISTENER REAL DE FIREBASE
-    ============================================================ */
-
-    const activeUnit = "RA";
-
-    db.ref("ubicacion/" + activeUnit).on("value", snapshot => {
-      const data = snapshot.val();
-      if (!data || !data.lat || !data.lng) return;
-      updateLocation(data.lat, data.lng);
-    });
-
-
-    /* ===========================================================
-                 🟩  RUTA OSRM — VERDE 75%
-    ============================================================ */
-
-    const osrmUrl =
-        "https://router.project-osrm.org/route/v1/driving/" +
-        "-100.9468,25.4530;" +
-        "-100.9917106,25.4415147;" +
-        "-100.96143732,25.44356175;" +
-        "-100.9468,25.4530" +
-        "?overview=full&geometries=geojson&steps=false";
-
-    fetch(osrmUrl)
-      .then(response => response.json())
-      .then(data => {
-        const coords = data.routes[0].geometry.coordinates;
-        const latlngs = coords.map(c => [c[1], c[0]]);
-
-        L.polyline(latlngs, {
-            color: "rgba(53, 209, 111, 0.75)",
-            weight: 5
-        }).addTo(map);
-      });
-
-
-    /* ===========================================================
-                    📍 BOTÓN "CONECTAR"
-    ============================================================ */
-
-    function connectLocation() {
-      if (!navigator.geolocation) {
-        alert("La geolocalización no es compatible en este dispositivo.");
-        return;
-      }
-      navigator.geolocation.getCurrentPosition(pos => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        map.setView([lat, lng], 17);
-      });
-    }
-  </script>
+  })
+  .catch(err => console.error("Error cargando la ruta OSRM:", err));
+</script>
 
 </body>
 </html>
