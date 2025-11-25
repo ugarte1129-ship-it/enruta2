@@ -1,15 +1,18 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Sender | Enviar ubicación</title>
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+    <!-- Leaflet CSS y JS deben cargarse antes del module que usa `L` -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        body { 
+        body {
             margin: 0;
-            font-family: Arial, sans-serif;
+            font-family: Arial;
             background: #f8f4ff;
         }
         #topBar {
@@ -43,6 +46,11 @@
         #map {
             height: calc(100vh - 140px);
         }
+        #status {
+            font-size: 13px;
+            color: #333;
+            margin-top: 8px;
+        }
     </style>
 </head>
 <body>
@@ -50,7 +58,7 @@
 <div id="topBar">Enviando ubicación</div>
 
 <div id="controls">
-    <select id="unidad">
+    <select id="unidad" aria-label="Selecciona unidad">
         <option value="" disabled selected>Selecciona la unidad</option>
         <option value="RA">RA</option>
         <option value="RP">RP</option>
@@ -58,17 +66,18 @@
         <option value="RS">RS</option>
     </select>
 
-    <button onclick="iniciarEnvio()">Iniciar</button>
+    <button id="btnStart">Iniciar</button>
+    <div id="status" aria-live="polite"></div>
 </div>
 
 <div id="map"></div>
 
-
 <script type="module">
-    // ---------------------- Firebase Config ----------------------
+    // ----- Firebase modular v10 imports -----
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
+    // ----- Config (tus datos reales ya conocidos) -----
     const firebaseConfig = {
         apiKey: "AIzaSyD2HcDytEFh2lQqjR1zW4FQ2OtxyjI9Fus",
         authDomain: "pgps-252ee.firebaseapp.com",
@@ -82,63 +91,101 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // ---------------------- Leaflet ----------------------
-    let map = L.map("map").setView([19.4326, -99.1332], 15);
-
-    // Fondo gris claro (como antes)
+    // ----- Leaflet: inicializar mapa (ya existe L porque cargamos leaflet.js antes) -----
+    const map = L.map("map").setView([19.4326, -99.1332], 15);
     L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-        maxZoom: 20
+        subdomains: "abcd",
+        maxZoom: 19
     }).addTo(map);
 
-    let marker = L.marker([19.4326, -99.1332]).addTo(map);
+    // marcador inicial
+    const marker = L.marker([19.4326, -99.1332]).addTo(map);
 
+    // UI
+    const unidadSelect = document.getElementById("unidad");
+    const btnStart = document.getElementById("btnStart");
+    const status = document.getElementById("status");
 
-    // ---------------------- Función principal ----------------------
-    let unidadSeleccionada = null;
+    let watchId = null;
+    let unidad = "";
 
-    function iniciarEnvio() {
-        unidadSeleccionada = document.getElementById("unidad").value;
-
-        if (!unidadSeleccionada) {
+    btnStart.addEventListener("click", () => {
+        unidad = unidadSelect.value;
+        if (!unidad) {
             alert("Selecciona una unidad");
             return;
         }
 
-        alert("Enviando ubicación para unidad: " + unidadSeleccionada);
+        status.textContent = "Solicitando permiso de ubicación…";
 
-        iniciarGPS();
-    }
-
-
-    function iniciarGPS() {
+        // Pedimos permiso y comenzamos
         if (!navigator.geolocation) {
-            alert("Tu navegador no soporta geolocalización");
+            status.textContent = "Tu navegador no soporta geolocalización.";
             return;
         }
 
-        navigator.geolocation.watchPosition(pos => {
-            let lat = pos.coords.latitude;
-            let lon = pos.coords.longitude;
+        // Primero obtener posición inmediata y luego iniciar watch (estabilidad)
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                status.textContent = "Enviando ubicación…";
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
 
-            marker.setLatLng([lat, lon]);
-            map.setView([lat, lon]);
+                // actualizar mapa localmente
+                marker.setLatLng([lat, lng]);
+                map.setView([lat, lng]);
 
-            // Guardar en Firebase en la ruta correcta
-            set(ref(db, "ubicacion/" + unidadSeleccionada), {
-                lat: lat,
-                lng: lon,
-                timestamp: Date.now()
-            });
+                // enviar inmediatamente a Firebase
+                set(ref(db, "ubicacion/" + unidad), {
+                    lat: lat,
+                    lng: lng,
+                    timestamp: Date.now()
+                }).catch(e => {
+                    console.error("Error enviando a Firebase:", e);
+                    status.textContent = "Error enviando a Firebase (ver consola).";
+                });
 
-        }, err => {
-            console.log("Error obteniendo ubicación", err);
-        }, {
-            enableHighAccuracy: true
-        });
-    }
+                // ahora iniciamos watchPosition para actualizaciones continuas
+                if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+                watchId = navigator.geolocation.watchPosition(
+                    (p) => {
+                        const la = p.coords.latitude;
+                        const ln = p.coords.longitude;
+
+                        marker.setLatLng([la, ln]);
+                        // opcional: map.setView([la, ln]); // coméntalo si no quieres recentrar constantemente
+
+                        set(ref(db, "ubicacion/" + unidad), {
+                            lat: la,
+                            lng: ln,
+                            timestamp: Date.now()
+                        }).catch(e => {
+                            console.error("Error enviando a Firebase:", e);
+                            status.textContent = "Error enviando a Firebase (ver consola).";
+                        });
+
+                        status.textContent = `Enviando — ${unidad} — ${la.toFixed(5)}, ${ln.toFixed(5)}`;
+                    },
+                    (err) => {
+                        console.warn("watchPosition error:", err);
+                        status.textContent = "Error de GPS: " + err.message;
+                    },
+                    { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+                );
+            },
+            (err) => {
+                console.warn("getCurrentPosition error:", err);
+                status.textContent = "No se pudo obtener ubicación: " + err.message;
+            },
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+        );
+    });
+
+    // Limpia watch al salir de la página
+    window.addEventListener("beforeunload", () => {
+        if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+    });
 </script>
-
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 </body>
 </html>
