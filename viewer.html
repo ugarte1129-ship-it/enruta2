@@ -1,144 +1,198 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>En ruta: Ubica tu transporte</title>
+<meta charset="UTF-8">
+<title>En Ruta – Ubica tu transporte</title>
 
-    <!-- Leaflet -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-    <style>
-        /* ==== ESTILO GLOBAL ==== */
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            overflow: hidden;
-        }
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+        overflow: hidden;
+    }
 
-        /* ==== HEADER CON DEGRADADO LILA === */
-        header {
-            background: linear-gradient(90deg, #6a11cb, #a044ff);
-            color: white;
-            text-align: center;
-            padding: 18px 0;
-            font-size: 22px;
-            font-weight: bold;
-            z-index: 1000;
-            position: relative;
-        }
+    /* ===== HEADER CON DEGRADADO MORADO ===== */
+    header {
+        background: linear-gradient(90deg, #6a11cb, #a044ff);
+        color: white;
+        text-align: center;
+        padding: 18px 0;
+        font-size: 22px;
+        font-weight: bold;
+        z-index: 1000;
+        position: relative;
+    }
 
-        /* ==== CONTENEDOR SUPERIOR ==== */
-        #panel-controles {
-            position: absolute;
-            top: 70px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: white;
-            padding: 12px 18px;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            z-index: 1000;
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
+    /* ===== SELECTOR ==== */
+    .selector {
+        position: absolute;
+        top: 75px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: white;
+        padding: 14px 20px;
+        border-radius: 14px;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.18);
+        z-index: 1000;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
 
-        #panel-controles select,
-        #panel-controles button {
-            padding: 8px 12px;
-            font-size: 15px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-        }
+    select {
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+    }
 
-        #panel-controles button {
-            background: #6a11cb;
-            border: none;
-            color: white;
-            cursor: pointer;
-            transition: 0.2s;
-        }
+    button {
+        padding: 9px 20px;
+        background: #7c3aed;
+        color: white;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+        transition: 0.2s;
+    }
 
-        #panel-controles button:hover {
-            background: #5a0db0;
-        }
+    button:hover {
+        background: #5b21b6;
+    }
 
-        /* ==== MAPA ==== */
-        #map {
-            height: 100vh;
-            width: 100vw;
-        }
+    /* ===== MAPA ===== */
+    #map {
+        height: 100vh;
+        width: 100vw;
+    }
 
-        /* QUITAR cualquier overlay central */
-        #location-label {
-            display: none !important;
-        }
-    </style>
+    /* ==== MARCADOR MORADO ANIMADO ===== */
+    .purple-marker .pin {
+        width: 16px;
+        height: 16px;
+        background: #a044ff;
+        border-radius: 50%;
+        border: 3px solid white;
+        box-shadow: 0 0 10px #a044ff;
+        position: relative;
+        top: 8px;
+        left: 7px;
+    }
+
+    .purple-marker .pulse {
+        width: 20px;
+        height: 20px;
+        border: 3px solid #a044ff;
+        border-radius: 50%;
+        animation: pulse 1.5s infinite ease-out;
+        position: absolute;
+        top: 4px;
+        left: 4px;
+        opacity: 0.7;
+    }
+
+    @keyframes pulse {
+        0%   { transform: scale(0.6); opacity: 0.9; }
+        100% { transform: scale(1.8); opacity: 0; }
+    }
+</style>
 </head>
-
 <body>
-    <header>En ruta: Ubica tu transporte</header>
 
-    <!-- Panel de controles -->
-    <div id="panel-controles">
-        <select id="bus-id">
-            <option value="">ID del Autobús</option>
-            <option value="1">Autobús 1</option>
-            <option value="2">Autobús 2</option>
-        </select>
-        <button onclick="conectar()">Conectar</button>
-    </div>
+<header>En ruta: Ubica tu transporte</header>
 
-    <div id="map"></div>
+<div class="selector">
+    <select id="unitSelect">
+        <option value="">ID del Autobús</option>
+        <option value="RA">RA</option>
+        <option value="RP">RP</option>
+        <option value="RV">RV</option>
+        <option value="RS">RS</option>
+    </select>
+    <button id="connectBtn">Conectar</button>
+</div>
 
-    <script>
-        /* ==== MAPA ==== */
-        var map = L.map("map").setView([25.438, -100.995], 14);
+<div id="map"></div>
 
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            maxZoom: 19,
-        }).addTo(map);
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-        /* ==== ICONO DEL AUTOBÚS (ANIMADO) ==== */
-        var busIcon = L.icon({
-            iconUrl: "https://cdn-icons-png.flaticon.com/512/61/61212.png",
-            iconSize: [40, 40],
-            iconAnchor: [20, 20]
-        });
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
-        var busMarker = null;
+<script>
+/* ========= FIREBASE CONFIG ========= */
+const firebaseConfig = {
+    apiKey: "AIzaSyA5pec-pqAnksqEKocrUv0HImO0H-qINDY",
+    authDomain: "pgps-252ee.firebaseapp.com",
+    databaseURL: "https://pgps-252ee-default-rtdb.firebaseio.com/",
+    projectId: "pgps-252ee",
+    storageBucket: "pgps-252ee.appspot.com",
+    messagingSenderId: "310435537463",
+    appId: "1:310435537463:web:9a0086d69a05b3b7fb2537"
+};
 
-        /* ==== FUNCIÓN DE CONEXIÓN ==== */
-        function conectar() {
-            let busID = document.getElementById("bus-id").value;
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-            if (!busID) {
-                alert("Selecciona un autobús");
-                return;
-            }
+/* ========= MAPA ========= */
+const map = L.map("map").setView([25.423, -100.992], 14);
 
-            alert("Conectado al autobús " + busID);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19
+}).addTo(map);
 
-            // Simulación de ubicación en tiempo real:
-            setInterval(() => actualizarUbicacion(busID), 1500);
-        }
+/* ====== ICONO MORADO ANIMADO ====== */
+const purpleIcon = L.divIcon({
+    className: "purple-marker",
+    html: `
+        <div class="pulse"></div>
+        <div class="pin"></div>
+    `,
+    iconSize: [30, 30],
+    iconAnchor: [15, 30]
+});
 
-        /* ==== ACTUALIZAR UBICACIÓN (SE MUEVE EN EL MAPA) ==== */
-        function actualizarUbicacion(busID) {
-            // Genera movimiento aleatorio simulado
-            let lat = 25.438 + (Math.random() - 0.5) * 0.01;
-            let lng = -100.995 + (Math.random() - 0.5) * 0.01;
+let senderMarker = null;
+let activeListener = null;
 
-            if (!busMarker) {
-                busMarker = L.marker([lat, lng], { icon: busIcon }).addTo(map);
-            } else {
-                busMarker.setLatLng([lat, lng]);
-            }
+/* ========= BOTÓN: CONECTAR ======== */
+document.getElementById("connectBtn").addEventListener("click", () => {
+    const busID = document.getElementById("unitSelect").value;
 
-            map.panTo([lat, lng], { animate: true, duration: 0.8 });
-        }
-    </script>
+    if (!busID) {
+        alert("Selecciona una unidad");
+        return;
+    }
+
+    if (activeListener) activeListener.off();
+
+    activeListener = db.ref("ubicacion/" + busID);
+
+    activeListener.on("value", snapshot => {
+        const data = snapshot.val();
+
+        if (!data || !data.lat || !data.lng) return;
+
+        moverMarcador(data.lat, data.lng);
+    });
+
+    alert("Conectado a la unidad " + busID);
+});
+
+/* ========= FUNCIÓN: MOVER MARCADOR ========= */
+function moverMarcador(lat, lng) {
+    if (!senderMarker) {
+        senderMarker = L.marker([lat, lng], { icon: purpleIcon }).addTo(map);
+    } else {
+        senderMarker.setLatLng([lat, lng]);
+    }
+
+    map.panTo([lat, lng], { animate: true, duration: 1 });
+}
+</script>
 </body>
 </html>
