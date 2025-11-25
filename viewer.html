@@ -1,181 +1,167 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ubica tu ruta</title>
+<meta charset="UTF-8">
+<title>Viewer En Ruta con Ubicación Propia</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+body { margin:0; font-family: Arial, sans-serif; }
+#map { height:100vh; width:100vw; }
+.selector {
+    position: absolute; top:15px; left:15px; background:white; padding:12px; border-radius:12px;
+    z-index:1000; box-shadow: 0px 3px 8px rgba(0,0,0,0.15);
+}
+select { padding:8px; width:160px; margin-right:10px; }
+button { padding:8px 16px; background-color:#9b59b6; color:white; border:none; border-radius:6px; cursor:pointer; }
 
-    <!-- Leaflet -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+.loader {
+    width:48px; height:48px; display:block; position:relative;
+}
+.loader::after {
+    content:''; width:48px; height:48px; position:absolute; left:0; bottom:0;
+    border-radius:50% 50% 0; border:15px solid #9b59b6;
+    transform: rotate(45deg) translate(0,0); animation: animMarker 0.4s ease-in-out infinite alternate;
+}
+.loader::before {
+    content:''; position:absolute; left:0; right:0; margin:auto; top:150%;
+    width:24px; height:4px; border-radius:50%; background: rgba(0,0,0,0.2);
+    animation: animShadow 0.4s ease-in-out infinite alternate;
+}
+@keyframes animMarker { 0% { transform:rotate(45deg) translate(5px,5px); } 100% { transform:rotate(45deg) translate(-5px,-5px); } }
+@keyframes animShadow { 0% { transform: scale(0.5); } 100% { transform: scale(1); } }
 
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background: white;
-            font-family: Arial, sans-serif;
-        }
-
-        header {
-            width: 100%;
-            padding: 18px;
-            text-align: center;
-            font-size: 24px;
-            font-weight: bold;
-            color: white;
-            /* Degradado lila exacto de tu imagen */
-            background: linear-gradient(90deg, #a86bff, #d4b4ff);
-        }
-
-        /* Contenedor original que tenías para selección de ruta */
-        #panel-rutas {
-            position: absolute;
-            top: 80px;
-            left: 20px;
-            background: white;
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 0 12px rgba(0,0,0,0.15);
-            z-index: 9999;
-        }
-
-        #map {
-            width: 100vw;
-            height: 100vh;
-        }
-
-        /* Marcador morado */
-        .purple-marker {
-            background-color: #b26bff;
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            border: 3px solid white;
-            box-shadow: 0 0 10px #b26bff;
-        }
-    </style>
+/* Mapa estilo gris como ya tenías */
+.leaflet-tile { filter: grayscale(60%) brightness(110%); }
+</style>
 </head>
-
 <body>
 
-<header>Ubica tu ruta</header>
+<!-- ELIMINADO el mensaje en medio como pediste -->
+<div id="message" style="display:none;"></div>
 
-<!-- 🔙 Regresé este panel exactamente como lo tenías -->
-<div id="panel-rutas">
-    <label><b>Selecciona una ruta:</b></label><br><br>
-    <select id="rutaSelect">
-        <option value="rutaA">Ruta A</option>
-        <option value="rutaB">Ruta B</option>
-        <option value="rutaC">Ruta C</option>
-    </select>
+<div class="selector">
+<label>En ruta: ubica tu transporte</label><br>
+<select id="unitSelect">
+<option value="">Selecciona unidad</option>
+<option value="RA">RA</option>
+<option value="RP">RP</option>
+<option value="RV">RV</option>
+<option value="RS">RS</option>
+</select>
+<button id="connectBtn">Conectar</button>
 </div>
 
 <div id="map"></div>
 
-<!-- Leaflet -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
 <script>
-/* ----------------------------
-   🚀 1. CONFIGURACIÓN FIREBASE
------------------------------ */
+// Firebase config (la tuya real)
 const firebaseConfig = {
-    apiKey: "AIzaSyDpxi2FQX1L-hBb3Ywqpgf7GkK80vKIPZg",
-    authDomain: "tracktec-5d724.firebaseapp.com",
-    databaseURL: "https://tracktec-5d724-default-rtdb.firebaseio.com",
-    projectId: "tracktec-5d724",
-    storageBucket: "tracktec-5d724.appspot.com",
-    messagingSenderId: "1094086420013",
-    appId: "1:1094086420013:web:4710c2e2a28be76be0813b"
+    apiKey: "AIzaSyA5pec-pqAnksqEKocrUv0HImO0H-qINDY",
+    authDomain: "pgps-252ee.firebaseapp.com",
+    databaseURL: "https://pgps-252ee-default-rtdb.firebaseio.com/",
+    projectId: "pgps-252ee",
+    storageBucket: "pgps-252ee.appspot.com",
+    messagingSenderId: "310435537463",
+    appId: "1:310435537463:web:9a0086d69a05b3b7fb2537"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
+// Mapa
+const map = L.map('map').setView([25.423, -100.992], 14);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
-/* ----------------------------
-   🌍 2. CREAR MAPA LEAFLET
------------------------------ */
-const map = L.map("map").setView([25.45, -100.96], 14);
+// Marcadores
+let marker = null;       
+let myLocationMarker = null; 
 
-// Tiles
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-}).addTo(map);
-
-
-/* ----------------------------
-   📍 3. MARCADOR MORADO ANIMADO
------------------------------ */
+/* -------------------------------
+   🔥 MARCADOR ANIMADO MORADO
+--------------------------------*/
 const purpleIcon = L.divIcon({
-    className: "purple-marker",
-    iconSize: [22, 22]
+    className: "loader",
+    iconSize: [48,48],
+    iconAnchor: [24,48]
 });
 
-let marker = L.marker([25.45, -100.96], { icon: purpleIcon }).addTo(map);
-
-
-/* ----------------------------
-   🔄 4. ESCUCHAR UBICACIÓN REAL DEL SENDER
------------------------------ */
-db.ref("sender/location").on("value", snapshot => {
-    const data = snapshot.val();
-    if (!data) return;
-
-    const { latitude, longitude } = data;
-    const newPos = [latitude, longitude];
-
-    marker.setLatLng(newPos);
-    map.panTo(newPos, { animate: true });
-});
-
-
-/* ----------------------------
-   🛣️ 5. DIBUJAR RUTA OSRM
-       VERDE PASTEL + 75% OPACIDAD
------------------------------ */
-
-let rutaPolyline = null;   // para reemplazar la ruta al cambiar selector
-
-function cargarRuta() {
-    if (rutaPolyline) {
-        map.removeLayer(rutaPolyline);
-    }
-
-    const osrmUrl =
-        "https://router.project-osrm.org/route/v1/driving/" +
-        "-100.9468,25.4530;" +          
-        "-100.9917106,25.4415147;" +    
-        "-100.96143732,25.44356175;" +  
-        "-100.9468,25.4530" +           
-        "?overview=full&geometries=geojson&steps=false";
-
-    fetch(osrmUrl)
-        .then(response => response.json())
-        .then(data => {
-            const coords = data.routes[0].geometry.coordinates;
-            const latlngs = coords.map(c => [c[1], c[0]]);
-
-            rutaPolyline = L.polyline(latlngs, {
-                color: "#7CFC00",    // VERDE PASTEL
-                weight: 5,
-                opacity: 0.75        // 75% DE OPACIDAD
-            }).addTo(map);
-        })
-        .catch(err => console.error("Error OSRM:", err));
+/* -------------------------------
+   🔄 FUNCIÓN MOVER MARCADOR RA
+--------------------------------*/
+function moveMarker(point){
+    if(!marker){
+        marker = L.marker(point,{ icon: purpleIcon }).addTo(map);
+    } else marker.setLatLng(point);
 }
 
-cargarRuta();
+/* -------------------------------
+   📍 UBICACIÓN DEL USUARIO
+--------------------------------*/
+function updateMyLocation(position){
+    const coords = [position.coords.latitude, position.coords.longitude];
+    if(!myLocationMarker){
+        myLocationMarker = L.marker(coords,{
+            icon:L.icon({
+                iconUrl:'https://cdn-icons-png.flaticon.com/512/64/64113.png',
+                iconSize:[32,32],
+                iconAnchor:[16,32]
+            })
+        }).addTo(map);
+    } else myLocationMarker.setLatLng(coords);
+}
 
-/* Si cambias rutas, recarga la línea */
-document.getElementById("rutaSelect").addEventListener("change", () => {
-    cargarRuta();
+if(navigator.geolocation){
+    navigator.geolocation.watchPosition(updateMyLocation, err=>console.error(err), {enableHighAccuracy:true});
+}
+
+/* -------------------------------
+   🔌 ESCUCHAR FIREBASE REAL
+--------------------------------*/
+const unitSelect = document.getElementById("unitSelect");
+const connectBtn = document.getElementById("connectBtn");
+let activeListener = null;
+
+connectBtn.addEventListener("click", ()=>{
+    const busID = unitSelect.value;
+    if(!busID){ alert("Selecciona una unidad"); return; }
+
+    if(activeListener) activeListener.off();
+    activeListener = db.ref("ubicacion/"+busID);
+
+    activeListener.on("value", snapshot=>{
+        const data = snapshot.val();
+        if(!data || !data.lat || !data.lng) return;
+        moveMarker([data.lat,data.lng]);
+    });
 });
-</script>
 
+/* -------------------------------
+   🛣️ ***AGREGADO: RUTA OSRM VERDE***
+   75% OPACIDAD – SIN ROMPER NADA
+--------------------------------*/
+const osrmUrl =
+    "https://router.project-osrm.org/route/v1/driving/" +
+    "-100.9468,25.4530;" +
+    "-100.9917106,25.4415147;" +
+    "-100.96143732,25.44356175;" +
+    "-100.9468,25.4530" +
+    "?overview=full&geometries=geojson&steps=false";
+
+fetch(osrmUrl)
+    .then(r => r.json())
+    .then(data => {
+        const coords = data.routes[0].geometry.coordinates;
+        const latlngs = coords.map(c => [c[1], c[0]]);
+
+        L.polyline(latlngs, {
+            color: "#7CFC00",     // VERDE PASTEL
+            weight: 5,
+            opacity: 0.75         // 75% TRANSLÚCIDO
+        }).addTo(map);
+    });
+</script>
 </body>
 </html>
