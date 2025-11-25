@@ -8,7 +8,7 @@
 body { margin:0; font-family: Arial, sans-serif; }
 #map { height:100vh; width:100vw; position: relative; }
 
-/* Texto central mientras no se selecciona ruta */
+/* Mensaje flotante central */
 #message {
     position: absolute;
     top: 50%;
@@ -17,9 +17,10 @@ body { margin:0; font-family: Arial, sans-serif; }
     font-size: 24px;
     color: #555;
     z-index: 1000;
-    background: rgba(255,255,255,0.8);
+    background: rgba(255,255,255,0.85);
     padding: 12px 20px;
     border-radius: 10px;
+    text-align: center;
 }
 
 /* Selector unidad */
@@ -33,7 +34,7 @@ body { margin:0; font-family: Arial, sans-serif; }
     z-index: 1000;
     box-shadow: 0px 3px 8px rgba(0,0,0,0.15);
 }
-select { padding: 8px; width: 140px; }
+select { padding: 8px; width: 160px; }
 
 /* Marcador lila animado */
 .loader {
@@ -69,13 +70,13 @@ select { padding: 8px; width: 140px; }
 }
 @keyframes animMarker {0% {transform: rotate(45deg) translate(5px,5px);} 100% {transform: rotate(45deg) translate(-5px,-5px);}}
 @keyframes animShadow {0% {transform: scale(0.5);} 100% {transform: scale(1);}}
-/* Gris más claro para el mapa */
+/* Fondo gris claro del mapa */
 .leaflet-tile { filter: grayscale(60%) brightness(110%); }
 </style>
 </head>
 <body>
 
-<div id="message">Ubica tu ruta</div>
+<div id="message">Selecciona la unidad para comenzar a enviar tu ubicación</div>
 
 <div class="selector">
 <select id="unitSelect">
@@ -94,7 +95,7 @@ select { padding: 8px; width: 140px; }
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
 <script>
-// Firebase config
+// Configuración Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyA5pec-pqAnksqEKocrUv0HImO0H-qINDY",
     authDomain: "pgps-252ee.firebaseapp.com",
@@ -141,7 +142,7 @@ function moveMarker(point){
     map.setView(point,15);
 }
 
-// Selección de unidad
+// Escuchar selección de unidad
 unitSelect.addEventListener("change", function(){
     const busID = this.value;
 
