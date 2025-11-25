@@ -23,7 +23,7 @@
       background: #f1ecf7;
     }
 
-    /* HEADER sólido */
+    /* HEADER corregido */
     header {
       background: #8C4BFF;
       color: white;
@@ -74,51 +74,48 @@
       height: calc(100vh - 130px);
     }
 
-    /* ============================================================
-        🔮 MARCADOR ANIMADO MORADO (versión pequeña)
-    ============================================================ */
-
-    .animated-marker {
-      width: 28px;
-      height: 28px;
+    /* MARCADOR ANIMADO (VERSIÓN MORADA Y MÁS PEQUEÑA) */
+    .purple-loader {
+      width: 38px;      /* más pequeño que el original */
+      height: 38px;
       display: block;
       position: relative;
     }
 
-    .animated-marker::after {
+    .purple-loader::after {
       content: '';
-      width: 28px;
-      height: 28px;
+      width: 38px;
+      height: 38px;
       left: 0;
       bottom: 0;
       position: absolute;
       border-radius: 50% 50% 0;
-      border: 10px solid #9b5de5;
+      border: 12px solid #8c4bff;   /* morado */
       transform: rotate(45deg) translate(0, 0);
-      animation: animMarker 0.4s ease-in-out infinite alternate;
+      animation: animMarker 0.45s ease-in-out infinite alternate;
     }
 
-    .animated-marker::before {
+    .purple-loader::before {
       content: '';
       position: absolute;
       left: 0;
       right: 0;
       margin: auto;
-      top: 140%;
-      width: 14px;
+      top: 145%;
+      width: 16px;
       height: 4px;
       border-radius: 50%;
       background: rgba(0, 0, 0, 0.25);
-      animation: animShadow 0.4s ease-in-out infinite alternate;
+      animation: animShadow 0.45s ease-in-out infinite alternate;
     }
 
     @keyframes animMarker {
-      0% { transform: rotate(45deg) translate(3px, 3px); }
-      100% { transform: rotate(45deg) translate(-3px, -3px); }
+      0% { transform: rotate(45deg) translate(4px, 4px); }
+      100% { transform: rotate(45deg) translate(-4px, -4px); }
     }
 
     @keyframes animShadow {
-      0% { transform: scale(0.6); }
+      0% { transform: scale(0.5); }
       100% { transform: scale(1); }
     }
 
@@ -126,8 +123,10 @@
 </head>
 <body>
 
+  <!-- HEADER -->
   <header>En ruta: ubica tu transporte</header>
 
+  <!-- Barra de opciones -->
   <div class="top-bar">
       <select id="unitSelect">
           <option value="RA">RA</option>
@@ -169,11 +168,11 @@
       maxZoom: 19,
     }).addTo(map);
 
-    /* Nuevo icono animado */
-    const animatedIcon = L.divIcon({
-      className: "animated-marker",
-      iconSize: [28, 28],
-      iconAnchor: [14, 14]
+    /* NUEVO MARCADOR ANIMADO */
+    const animatedPurpleIcon = L.divIcon({
+      className: "purple-loader",
+      iconSize: [38, 38],
+      iconAnchor: [19, 19]
     });
 
     let marker = null;
@@ -184,7 +183,7 @@
       const newPos = [lat, lng];
 
       if (!marker) {
-        marker = L.marker(newPos, { icon: animatedIcon }).addTo(map);
+        marker = L.marker(newPos, { icon: animatedPurpleIcon }).addTo(map);
         map.setView(newPos, 17);
         lastPosition = newPos;
         return;
