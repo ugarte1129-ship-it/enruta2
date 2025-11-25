@@ -23,7 +23,7 @@
       background: #f1ecf7;
     }
 
-    /* HEADER ahora en color solido #D299F2 */
+    /* HEADER sólido */
     header {
       background: #8C4BFF;
       color: white;
@@ -74,26 +74,60 @@
       height: calc(100vh - 130px);
     }
 
-    .purple-marker {
-      background-color: #9b5de5;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      border: 3px solid white;
-      box-shadow: 0 0 12px rgba(155, 93, 229, 0.9);
+    /* ============================================================
+        🔮 MARCADOR ANIMADO MORADO (versión pequeña)
+    ============================================================ */
+
+    .animated-marker {
+      width: 28px;
+      height: 28px;
+      display: block;
+      position: relative;
     }
 
-    .leaflet-marker-icon {
-      transition: transform 0.7s ease;
+    .animated-marker::after {
+      content: '';
+      width: 28px;
+      height: 28px;
+      left: 0;
+      bottom: 0;
+      position: absolute;
+      border-radius: 50% 50% 0;
+      border: 10px solid #9b5de5;
+      transform: rotate(45deg) translate(0, 0);
+      animation: animMarker 0.4s ease-in-out infinite alternate;
     }
+
+    .animated-marker::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      margin: auto;
+      top: 140%;
+      width: 14px;
+      height: 4px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.25);
+      animation: animShadow 0.4s ease-in-out infinite alternate;
+    }
+
+    @keyframes animMarker {
+      0% { transform: rotate(45deg) translate(3px, 3px); }
+      100% { transform: rotate(45deg) translate(-3px, -3px); }
+    }
+
+    @keyframes animShadow {
+      0% { transform: scale(0.6); }
+      100% { transform: scale(1); }
+    }
+
   </style>
 </head>
 <body>
 
-  <!-- HEADER con título correcto -->
   <header>En ruta: ubica tu transporte</header>
 
-  <!-- Barra de opciones -->
   <div class="top-bar">
       <select id="unitSelect">
           <option value="RA">RA</option>
@@ -135,10 +169,11 @@
       maxZoom: 19,
     }).addTo(map);
 
-    const purpleIcon = L.divIcon({
-      className: "purple-marker",
-      iconSize: [20, 20],
-      iconAnchor: [10, 10],
+    /* Nuevo icono animado */
+    const animatedIcon = L.divIcon({
+      className: "animated-marker",
+      iconSize: [28, 28],
+      iconAnchor: [14, 14]
     });
 
     let marker = null;
@@ -149,7 +184,7 @@
       const newPos = [lat, lng];
 
       if (!marker) {
-        marker = L.marker(newPos, { icon: purpleIcon }).addTo(map);
+        marker = L.marker(newPos, { icon: animatedIcon }).addTo(map);
         map.setView(newPos, 17);
         lastPosition = newPos;
         return;
@@ -206,5 +241,3 @@
   </script>
 </body>
 </html>
-
-
