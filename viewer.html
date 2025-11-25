@@ -75,7 +75,7 @@ select { padding: 8px; width: 140px; }
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
 <script>
-// Configuración Firebase
+// Configuración de Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyA5pec-pqAnksqEKocrUv0HImO0H-qINDY",
     authDomain: "pgps-252ee.firebaseapp.com",
@@ -97,11 +97,13 @@ L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{
 
 // Ruta fija RA: La Asunción → Instituto Tecnológico
 const routeRA = [
-    [25.425, -100.995], // La Asunción (ejemplo)
-    [25.424, -100.993],
-    [25.423, -100.992], // Instituto Tecnológico (ejemplo)
+    [25.4252, -100.9950], // La Asunción
+    [25.4245, -100.9940],
+    [25.4240, -100.9932],
+    [25.4235, -100.9925],
+    [25.4230, -100.9920] // Instituto Tecnológico
 ];
-let polylineRA = L.polyline(routeRA, {color:'yellow', weight:5}).addTo(map);
+L.polyline(routeRA, {color:'yellow', weight:5}).addTo(map);
 
 let marker = null;
 const unitSelect = document.getElementById("unitSelect");
@@ -118,11 +120,15 @@ function moveMarker(point){
     map.setView(point,15);
 }
 
+// Escuchar unidad seleccionada
 unitSelect.addEventListener("change", function(){
     const busID = this.value;
+
+    // Quitar listener anterior
     if(activeListener) activeListener.off();
+
+    // Solo RA activa marcador
     if(busID === "RA"){
-        // Solo escuchamos RA
         activeListener = db.ref("ubicaciones/"+busID);
         activeListener.on("value", snapshot=>{
             const data = snapshot.val();
@@ -130,8 +136,9 @@ unitSelect.addEventListener("change", function(){
             moveMarker([data.lat, data.lng]);
         });
     } else {
-        // Limpiar marcador si no es RA
+        // Limpiar marcador si otra unidad
         if(marker) map.removeLayer(marker);
+        marker = null;
     }
 });
 </script>
