@@ -6,10 +6,7 @@
   <title>En ruta: ubica tu transporte</title>
 
   <!-- Leaflet -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <!-- Firebase -->
@@ -23,13 +20,14 @@
       background: #f1ecf7;
     }
 
-    /* HEADER con degradado vertical más sólido */
+    /* HEADER: un poco más sólido, un poco más blanco, degradado VERTICAL */
     header {
       background: linear-gradient(
         180deg,
-        #b28bff,
-        #a578ff,
-        #9964ff
+        #e8ddff,
+        #e0d2ff,
+        #d7c8ff,
+        #cdbaff
       );
       color: white;
       padding: 18px;
@@ -42,10 +40,10 @@
 
     #map {
       width: 100%;
-      height: calc(100vh - 140px);
+      height: calc(100vh - 160px);
     }
 
-    /* Barra inferior */
+    /* 🔥 BARRA DE SELECCIÓN RESTAURADA COMPLETA */
     .bottom-bar {
       width: 100%;
       background: white;
@@ -54,12 +52,31 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-weight: 600;
       position: relative;
       z-index: 500;
+      font-weight: 600;
     }
 
-    /* Botón morado */
+    .route-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    .route-btn {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      background: #ece1ff;
+      color: #6b3dbb;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .route-btn:hover {
+      background: #decfff;
+    }
+
+    /* Botón morado de conectar */
     .btn-connect {
       background: #8a4dff;
       color: white;
@@ -77,7 +94,7 @@
       background: #7b3fff;
     }
 
-    /* Marcador LILA */
+    /* Marcador lila */
     .purple-marker {
       background-color: #9b5de5;
       width: 20px;
@@ -94,12 +111,18 @@
 </head>
 <body>
 
-  <!-- Header con el título correcto -->
+  <!-- HEADER -->
   <header>En ruta: ubica tu transporte</header>
 
-  <!-- Barra inferior con botón (RESTABLECIDA COMPLETA) -->
+  <!-- BARRA RESTAURADA COMPLETA (selector + conectar) -->
   <div class="bottom-bar">
-    <span>Selecciona una ruta:</span>
+    <div class="route-buttons">
+      <button class="route-btn">RA</button>
+      <button class="route-btn">RP</button>
+      <button class="route-btn">RV</button>
+      <button class="route-btn">RS</button>
+    </div>
+
     <button class="btn-connect" onclick="connectLocation()">Conectar</button>
   </div>
 
@@ -168,7 +191,7 @@
     }
 
     /* ===========================================================
-                 🔥 LISTENER REAL DE FIREBASE
+                    🔥 LISTENER REAL DE FIREBASE
     ============================================================ */
 
     const activeUnit = "RA";
@@ -176,7 +199,6 @@
     db.ref("ubicacion/" + activeUnit).on("value", snapshot => {
       const data = snapshot.val();
       if (!data || !data.lat || !data.lng) return;
-
       updateLocation(data.lat, data.lng);
     });
 
@@ -215,7 +237,6 @@
         alert("La geolocalización no es compatible en este dispositivo.");
         return;
       }
-
       navigator.geolocation.getCurrentPosition(pos => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
