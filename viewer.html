@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ubicación en Vivo</title>
+    <title>Ubica tu ruta</title>
 
     <!-- Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -18,12 +18,25 @@
 
         header {
             width: 100%;
-            padding: 20px;
+            padding: 18px;
             text-align: center;
-            font-size: 22px;
+            font-size: 24px;
             font-weight: bold;
             color: white;
-            background: linear-gradient(90deg, #b26bff, #d8b4ff);
+            /* Degradado lila exacto de tu imagen */
+            background: linear-gradient(90deg, #a86bff, #d4b4ff);
+        }
+
+        /* Contenedor original que tenías para selección de ruta */
+        #panel-rutas {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 0 12px rgba(0,0,0,0.15);
+            z-index: 9999;
         }
 
         #map {
@@ -45,7 +58,18 @@
 
 <body>
 
-<header>Ubicación en Vivo</header>
+<header>Ubica tu ruta</header>
+
+<!-- 🔙 Regresé este panel exactamente como lo tenías -->
+<div id="panel-rutas">
+    <label><b>Selecciona una ruta:</b></label><br><br>
+    <select id="rutaSelect">
+        <option value="rutaA">Ruta A</option>
+        <option value="rutaB">Ruta B</option>
+        <option value="rutaC">Ruta C</option>
+    </select>
+</div>
+
 <div id="map"></div>
 
 <!-- Leaflet -->
@@ -96,7 +120,7 @@ let marker = L.marker([25.45, -100.96], { icon: purpleIcon }).addTo(map);
 
 
 /* ----------------------------
-   🔄 4. ESCUCHAR UBICACIÓN REAL
+   🔄 4. ESCUCHAR UBICACIÓN REAL DEL SENDER
 ----------------------------- */
 db.ref("sender/location").on("value", snapshot => {
     const data = snapshot.val();
@@ -111,31 +135,46 @@ db.ref("sender/location").on("value", snapshot => {
 
 
 /* ----------------------------
-   🛣️ 5. DIBUJAR RUTA OSRM (VERDE PASTEL 50% OPACIDAD)
+   🛣️ 5. DIBUJAR RUTA OSRM
+       VERDE PASTEL + 75% OPACIDAD
 ----------------------------- */
-const osrmUrl =
-    "https://router.project-osrm.org/route/v1/driving/" +
-    "-100.9468,25.4530;" +          // La Asunción
-    "-100.9917106,25.4415147;" +    // ITS
-    "-100.96143732,25.44356175;" +  // Sendero
-    "-100.9468,25.4530" +           // Regreso
-    "?overview=full&geometries=geojson&steps=false";
 
-fetch(osrmUrl)
-    .then(r => r.json())
-    .then(data => {
-        const coords = data.routes[0].geometry.coordinates;
-        const latlngs = coords.map(c => [c[1], c[0]]);
+let rutaPolyline = null;   // para reemplazar la ruta al cambiar selector
 
-        L.polyline(latlngs, {
-            color: "#7CFC00",   // 💚 VERDE PASTEL
-            weight: 5,
-            opacity: 0.5       // 🔥 50% TRANSLÚCIDO
-        }).addTo(map);
+function cargarRuta() {
+    if (rutaPolyline) {
+        map.removeLayer(rutaPolyline);
+    }
 
-        map.fitBounds(latlngs);
-    })
-    .catch(err => console.error("Error en OSRM:", err));
+    const osrmUrl =
+        "https://router.project-osrm.org/route/v1/driving/" +
+        "-100.9468,25.4530;" +          
+        "-100.9917106,25.4415147;" +    
+        "-100.96143732,25.44356175;" +  
+        "-100.9468,25.4530" +           
+        "?overview=full&geometries=geojson&steps=false";
+
+    fetch(osrmUrl)
+        .then(response => response.json())
+        .then(data => {
+            const coords = data.routes[0].geometry.coordinates;
+            const latlngs = coords.map(c => [c[1], c[0]]);
+
+            rutaPolyline = L.polyline(latlngs, {
+                color: "#7CFC00",    // VERDE PASTEL
+                weight: 5,
+                opacity: 0.75        // 75% DE OPACIDAD
+            }).addTo(map);
+        })
+        .catch(err => console.error("Error OSRM:", err));
+}
+
+cargarRuta();
+
+/* Si cambias rutas, recarga la línea */
+document.getElementById("rutaSelect").addEventListener("change", () => {
+    cargarRuta();
+});
 </script>
 
 </body>
