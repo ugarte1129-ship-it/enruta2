@@ -23,16 +23,24 @@
       background: #f1ecf7;
     }
 
-    /* HEADER degradado lila */
+    /* HEADER con degradado EXACTO que pediste */
     header {
-      background: linear-gradient(90deg, #b086f7, #9b5de5, #7a3fe0);
-      color: white;
+      background: linear-gradient(
+        90deg,
+        #f7f3ff,
+        #f3effe,
+        #f0ebff,
+        #ede8ff,
+        #e8e2fe,
+        #e2daff
+      );
+      color: #4b2e83;
       padding: 18px;
       text-align: center;
       font-size: 23px;
       font-weight: 600;
       letter-spacing: 0.5px;
-      box-shadow: 0 2px 15px rgba(0,0,0,0.25);
+      box-shadow: 0 2px 15px rgba(0,0,0,0.15);
     }
 
     #map {
@@ -109,7 +117,6 @@
     function updateLocation(lat, lng) {
       const newPos = [lat, lng];
 
-      // 1st update → crear marcador
       if (!marker) {
         marker = L.marker(newPos, { icon: purpleIcon }).addTo(map);
         map.setView(newPos, 17);
@@ -117,12 +124,10 @@
         return;
       }
 
-      // Si no se movió, no animar ni mover
       if (lastPosition[0] === lat && lastPosition[1] === lng) {
         return;
       }
 
-      // Movimiento suave
       marker.setLatLng(newPos);
       map.panTo(newPos);
 
@@ -131,10 +136,9 @@
 
 
     /* ===========================================================
-                 🔥 LISTENER REAL DE FIREBASE (SIN SIMULACIONES)
+                 🔥 LISTENER REAL DE FIREBASE
     ============================================================ */
 
-    // Unidad RA (puedes cambiar la unidad)
     const activeUnit = "RA";
 
     db.ref("ubicacion/" + activeUnit).on("value", snapshot => {
@@ -151,10 +155,10 @@
 
     const osrmUrl =
         "https://router.project-osrm.org/route/v1/driving/" +
-        "-100.9468,25.4530;" +          // La Asunción 215
-        "-100.9917106,25.4415147;" +    // ITS
-        "-100.96143732,25.44356175;" +  // Plaza Patio Sendero
-        "-100.9468,25.4530" +           // Regreso
+        "-100.9468,25.4530;" +
+        "-100.9917106,25.4415147;" +
+        "-100.96143732,25.44356175;" +
+        "-100.9468,25.4530" +
         "?overview=full&geometries=geojson&steps=false";
 
     fetch(osrmUrl)
@@ -164,9 +168,8 @@
         const coords = data.routes[0].geometry.coordinates;
         const latlngs = coords.map(c => [c[1], c[0]]);
 
-        // 🟢 Línea verde pastel 75% opacidad
         L.polyline(latlngs, {
-            color: "rgba(53, 209, 111, 0.75)",  // ← Verde pastel traslúcido
+            color: "rgba(53, 209, 111, 0.75)",  // Verde pastel 75%
             weight: 5
         }).addTo(map);
 
