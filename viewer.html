@@ -132,35 +132,20 @@ const unitSelect = document.getElementById("unitSelect");
 const message = document.getElementById("message");
 const connectBtn = document.getElementById("connectBtn");
 
-// API Key de OpenRouteService
-const ORS_API_KEY = "TU_API_KEY_ORS"; // <- reemplaza por tu key
+// Coordenadas aproximadas de la ruta RA (La Asunción 215 → Instituto Tecnológico Saltillo)
+// Puedes ajustarlas según OpenStreetMap para más precisión
+const raRouteCoords = [
+    [25.4252, -100.9950], // inicio
+    [25.4245, -100.9942],
+    [25.4239, -100.9935],
+    [25.4230, -100.9917], // fin
+];
 
-async function drawFixedRoute() {
-    try {
-        const start = [-100.9950, 25.4252]; // La Asunción 215 (lng, lat)
-        const end   = [-100.9917, 25.4415]; // Instituto Tecnológico Saltillo (lng, lat)
-
-        const body = { coordinates:[start,end], profile:"driving-car", format:"geojson" };
-
-        const res = await fetch("https://api.openrouteservice.org/v2/directions/driving-car", {
-            method:"POST",
-            headers:{
-                "Authorization": ORS_API_KEY,
-                "Content-Type":"application/json"
-            },
-            body: JSON.stringify(body)
-        });
-        if(!res.ok) throw new Error("Ruta no disponible");
-        const json = await res.json();
-        routeLine = L.geoJSON(json, { style:{ color:"yellow", weight:5 } }).addTo(map);
-    } catch(err) {
-        console.error(err);
-        alert("No se pudo cargar la ruta. Revisa tu API Key de OpenRouteService.");
-    }
+// Dibujar ruta fija RA en amarillo
+function drawRARoute(){
+    routeLine = L.polyline(raRouteCoords, {color:'yellow', weight:5}).addTo(map);
 }
-
-// Dibujar ruta al iniciar
-drawFixedRoute();
+drawRARoute();
 
 // Función mover marcador animado
 function moveMarker(point){
@@ -182,9 +167,10 @@ connectBtn.addEventListener("click", ()=>{
     message.style.display = 'none';
 
     if(activeListener) activeListener.off();
-    activeListener = db.ref("ubicaciones/"+busID);
+    activeListener = db.ref("ubicacion/"+busID); // <-- revisa que coincida con tu estructura
     activeListener.on("value", snapshot=>{
         const data = snapshot.val();
+        console.log("Datos recibidos de Firebase:", data);
         if(!data || !data.lat || !data.lng) return;
         moveMarker([data.lat, data.lng]);
     });
