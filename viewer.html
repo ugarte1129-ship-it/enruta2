@@ -1,114 +1,207 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>En ruta</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Tracking</title>
 
-<!-- Leaflet -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<style>
-  /* HEADER ORIGINAL */
-  .app-header {
-    width: 100%;
-    background-color: #9c6ade;
-    padding: 18px 0;
-    text-align: center;
-    color: white;
-    font-size: 22px;
-    font-weight: 600;
-  }
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
-  /* BARRA DE SELECCIÓN ORIGINAL */
-  .route-bar {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 12px;
-    margin: 15px 0;
-  }
+  <style>
+    body {
+      margin: 0;
+      font-family: "Montserrat", sans-serif;
+      background: #f1ecf7;
+    }
 
-  .route-input {
-    padding: 10px 14px;
-    border-radius: 10px;
-    border: 1px solid #d0d0d0;
-    width: 220px;
-    font-size: 15px;
-    background: white;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.08);
-  }
+    /* === HEADER estilo de la captura === */
+    header {
+      background: linear-gradient(90deg, #c39bff, #9b5de5, #7a3fe0);
+      color: white;
+      text-align: center;
+      padding: 18px 0 10px;
+      font-size: 22px;
+      font-weight: 600;
+      box-shadow: 0 2px 18px rgba(0, 0, 0, 0.25);
+    }
 
-  .route-button {
-    background-color: #333;
-    color: white;
-    padding: 10px 18px;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 15px;
-    transition: 0.2s;
-  }
+    /* Barra blanca debajo del título */
+    .route-bar {
+      width: 100%;
+      background: white;
+      padding: 14px 0;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
 
-  .route-button:hover {
-    background-color: #000;
-  }
+    select {
+      padding: 10px 14px;
+      font-size: 15px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      outline: none;
+    }
 
-  /* MAPA */
-  #map {
-    height: 90vh;
-    width: 100%;
-  }
-</style>
+    button {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      background: #8b4fe3;
+      color: white;
+      font-size: 15px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    button:hover {
+      background: #732fd4;
+    }
+
+    #map {
+      width: 100%;
+      height: calc(100vh - 120px);
+    }
+
+    /* Marcador morado */
+    .purple-marker {
+      background-color: #9b5de5;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 0 12px rgba(155, 93, 229, 0.9);
+    }
+
+    .leaflet-marker-icon {
+      transition: transform 0.7s ease;
+    }
+  </style>
 </head>
-
 <body>
 
-<header class="app-header">
-  En ruta: Ubica tu transporte
-</header>
+  <header>En ruta: Ubica tu transporte</header>
 
-<div class="route-bar">
-  <input type="text" id="busIdInput" placeholder="ID del Autobús" class="route-input" />
-  <button class="route-button" onclick="connectBus()">Conectar</button>
-</div>
+  <div class="route-bar">
+    <select id="routeSelector">
+      <option value="RA">RA</option>
+      <option value="RP">RP</option>
+      <option value="RV">RV</option>
+      <option value="RS">RS</option>
+    </select>
+    <button id="connectBtn">Conectar</button>
+  </div>
 
-<div id="map"></div>
+  <div id="map"></div>
 
-<script>
-  // MAPA ORIGINAL (NO CAMBIADO)
-  var map = L.map("map").setView([19.4326, -99.1332], 12);
+  <script>
+    /* ===========================================
+                FIREBASE CONFIG
+    ============================================ */
 
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19
-  }).addTo(map);
+    const firebaseConfig = {
+        apiKey: "AIzaSyA5pec-pqAnksqEKocrUv0HImO0H-qINDY",
+        authDomain: "pgps-252ee.firebaseapp.com",
+        databaseURL: "https://pgps-252ee-default-rtdb.firebaseio.com/",
+        projectId: "pgps-252ee",
+        storageBucket: "pgps-252ee.appspot.com",
+        messagingSenderId: "310435537463",
+        appId: "1:310435537463:web:9a0086d69a05b3b7fb2537"
+    };
 
-  // LÍNEA VERDE PASTEL 75% OPACIDAD (TAL CUAL LA TENÍAMOS)
-  const rutaCoordenadas = [
-    [19.4326, -99.1332],
-    [19.4400, -99.1400],
-    [19.4500, -99.1500],
-    [19.4600, -99.1600]
-  ];
-
-  const lineaVerde = L.polyline(rutaCoordenadas, {
-    color: "rgba(0, 200, 0, 0.75)",  // Verde pastel, 75% opacidad
-    weight: 7
-  }).addTo(map);
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
 
-  // FUNCIÓN DE CONEXIÓN ORIGINAL
-  function connectBus() {
-    const busId = document.getElementById("busIdInput").value;
-    if (!busId.trim()) {
-      alert("Ingresa un ID de autobús.");
-      return;
+    /* ===========================================
+                      MAPA
+    ============================================ */
+
+    const map = L.map("map").setView([25.423, -100.992], 14);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+    }).addTo(map);
+
+    const purpleIcon = L.divIcon({
+      className: "purple-marker",
+      iconSize: [20, 20],
+      iconAnchor: [10, 10],
+    });
+
+    let marker = null;
+    let lastPosition = null;
+    let activeUnit = "RA"; // por defecto
+
+
+    function updateLocation(lat, lng) {
+      const newPos = [lat, lng];
+
+      if (!marker) {
+        marker = L.marker(newPos, { icon: purpleIcon }).addTo(map);
+        map.setView(newPos, 17);
+        lastPosition = newPos;
+        return;
+      }
+
+      if (lastPosition[0] === lat && lastPosition[1] === lng) return;
+
+      marker.setLatLng(newPos);
+      map.panTo(newPos);
+
+      lastPosition = newPos;
     }
-    alert("Conectado al autobús " + busId);
-  }
-</script>
+
+
+    /* ===========================================
+                CAMBIO DE ROUTE + CONEXIÓN
+    ============================================ */
+
+    document.getElementById("connectBtn").onclick = () => {
+      activeUnit = document.getElementById("routeSelector").value;
+
+      db.ref("ubicacion/" + activeUnit).on("value", snap => {
+        const data = snap.val();
+        if (!data) return;
+
+        updateLocation(data.lat, data.lng);
+      });
+    };
+
+
+    /* ===========================================
+              LÍNEA VERDE TRASLÚCIDA 75%
+    ============================================ */
+
+    const osrmUrl =
+        "https://router.project-osrm.org/route/v1/driving/" +
+        "-100.9468,25.4530;" +
+        "-100.9917106,25.4415147;" +
+        "-100.96143732,25.44356175;" +
+        "-100.9468,25.4530" +
+        "?overview=full&geometries=geojson&steps=false";
+
+    fetch(osrmUrl)
+      .then(res => res.json())
+      .then(data => {
+        const coords = data.routes[0].geometry.coordinates;
+        const latlngs = coords.map(c => [c[1], c[0]]);
+
+        L.polyline(latlngs, {
+          color: "rgba(53, 209, 111, 0.75)",  /* VERDE 75% */
+          weight: 5
+        }).addTo(map);
+      });
+  </script>
 
 </body>
 </html>
