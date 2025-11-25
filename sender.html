@@ -2,102 +2,72 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Enviar Ubicación</title>
+    <title>Sender | Enviar ubicación</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #f8f4ff, #e0d7ff);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-        }
-        h2 { color: #4b3c8c; }
-        form {
-            background: #fff;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        input {
-            padding: 12px;
-            margin: 10px 0;
-            width: 100%;
-            border-radius: 10px;
-            border: 1px solid #ccc;
-        }
-        button {
-            padding: 15px;
-            width: 100%;
-            font-size: 16px;
-            border-radius: 12px;
-            border: none;
-            background: #9c7aff;
-            color: #fff;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        button:hover { transform: scale(1.05); }
+        body { font-family: Arial; margin: 0; }
+        #map { height: 100vh; }
     </style>
 </head>
 <body>
-    <h2>Registro de Autobús</h2>
 
-    <form onsubmit="startTracking(); return false;">
-        <label>ID del Autobús:</label>
-        <input id="busID" type="text" placeholder="Ej: RA" required>
-        <button type="submit">Iniciar</button>
-    </form>
+<div id="map"></div>
 
-    <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script type="module">
+    // ---------------------- Firebase Config ----------------------
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyD2HcDytEFh2lQqjR1zW4FQ2OtxyjI9Fus",
-            authDomain: "pgps-252ee.firebaseapp.com",
-            databaseURL: "https://pgps-252ee-default-rtdb.firebaseio.com",
-            projectId: "pgps-252ee",
-            storageBucket: "pgps-252ee.firebasestorage.app",
-            messagingSenderId: "872355118404",
-            appId: "1:872355118404:web:412e1ac6fc7755b2ccab11"
-        };
+    const firebaseConfig = {
+        apiKey: "TU_API_KEY",
+        authDomain: "TU_AUTH_DOMAIN",
+        databaseURL: "https://TU_PROJECT_ID.firebaseio.com",
+        projectId: "TU_PROJECT_ID",
+        storageBucket: "TU_STORAGE_BUCKET",
+        messagingSenderId: "TU_MESSAGING_SENDER_ID",
+        appId: "TU_APP_ID"
+    };
 
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-        function startTracking() {
-            const busID = document.getElementById('busID').value.trim();
-            if (!busID) {
-                alert("Ingresa un ID válido");
-                return;
-            }
+    // ---------------------- Leaflet ----------------------
+    let map = L.map("map").setView([0, 0], 15);
 
-            if (!navigator.geolocation) {
-                alert("Tu navegador no soporta geolocalización");
-                return;
-            }
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
-            navigator.geolocation.watchPosition(
-                (pos) => {
-                    db.ref("ubicacion/" + busID).set({
-                        lat: pos.coords.latitude,
-                        lng: pos.coords.longitude,
-                        timestamp: Date.now()
-                    });
-                },
-                (err) => {
-                    alert("Error obteniendo ubicación: " + err.message);
-                },
-                { enableHighAccuracy: true }
-            );
+    let marker = L.marker([0, 0]).addTo(map);
 
-            alert("Enviando ubicación del ID: " + busID);
+    // ---------------------- Ubicación ----------------------
+    function updateLocation() {
+        if (!navigator.geolocation) {
+            alert("Tu navegador no soporta geolocalización");
+            return;
         }
-    </script>
+
+        navigator.geolocation.watchPosition(pos => {
+            let lat = pos.coords.latitude;
+            let lon = pos.coords.longitude;
+
+            marker.setLatLng([lat, lon]);
+            map.setView([lat, lon], 15);
+
+            // Guardar en Firebase
+            set(ref(db, "sender/ubicacion"), {
+                lat: lat,
+                lon: lon,
+                timestamp: Date.now()
+            });
+
+        }, err => {
+            console.log("Error: ", err);
+        });
+    }
+
+    updateLocation();
+</script>
 
 </body>
 </html>
+
