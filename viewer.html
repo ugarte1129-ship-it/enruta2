@@ -1,169 +1,41 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Registro de Unidad</title>
-
-    <style>
-        body {
-            margin: 0;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: linear-gradient(135deg, #f7f3ff, #e1d9ff);
-            font-family: Arial, sans-serif;
-        }
-
-        .card {
-            width: 320px;
-            background: white;
-            padding: 30px 25px;
-            border-radius: 18px;
-            box-shadow: 0px 4px 10px rgba(0,0,0,0.10);
-            text-align: center;
-        }
-
-        h2 {
-            margin: 0 0 10px;
-            color: #4b3c8c;
-            font-size: 22px;
-        }
-
-        p {
-       …
-[12:51 p.m., 26/11/2025] 🤍: <!DOCTYPE html>
-<html lang="es">
-<head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>En ruta: ubica tu transporte</title>
 
   <!-- Leaflet -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <!-- Firebase MODULAR -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, onValue, off } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-  <style>
-    body {
-      margin: 0;
-      font-family: "Montserrat", sans-serif;
-      background: #f1ecf7;
-    }
+    /* ===========================================================
+                        FIREBASE CONFIG
+    ============================================================ */
+    const firebaseConfig = {
+      apiKey: "AIzaSyD2HcDytEFh2lQqjR1zW4FQ2OtxyjI9Fus",
+      authDomain: "pgps-252ee.firebaseapp.com",
+      databaseURL: "https://pgps-252ee-default-rtdb.firebaseio.com",
+      projectId: "pgps-252ee",
+      storageBucket: "pgps-252ee.firebasestorage.app",
+      messagingSenderId: "872355118404",
+      appId: "1:872355118404:web:412e1ac6fc7755b2ccab11"
+    };
 
-    header {
-      background: #8C4BFF;
-      color: white;
-      …
-[12:57 p.m., 26/11/2025] 🤍: <!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Viewer</title>
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f2f2f2;
-        }
-
-        #map {
-            width: 100vw;
-            height: 90vh;
-        }
-
-        .top-bar {
-            width: 100%;
-            height: 60px;
-            background: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-
-        button {
-            padding: 10px 15px;
-            background: #0084ff;
-            border…
-[1:11 p.m., 26/11/2025] 🤍: <!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Viewer</title>
-
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f2f2f2;
-        }
-
-        #map {
-            width: 100vw;
-            height: 90vh;
-        }
-
-        .top-bar {
-            width: 100%;
-            height: 60px;
-            background: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-
-        button {
-            padding: 10px 15px;
-            background: #0084ff;
-            border…
-[1:14 p.m., 26/11/2025] 🤍: // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyD2HcDytEFh2lQqjR1zW4FQ2OtxyjI9Fus",
-  authDomain: "pgps-252ee.firebaseapp.com",
-  databaseURL: "https://pgps-252ee-default-rtdb.firebaseio.com",
-  projectId: "pgps-252ee",
-  storageBucket: "pgps-252ee.firebasestorage.app",
-  messagingSenderId: "872355118404",
-  appId: "1:872355118404:web:412e1ac6fc7755b2ccab11"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-[1:18 p.m., 26/11/2025] 🤍: <!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>En ruta: ubica tu transporte</title>
-
-  <!-- Leaflet -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    // Hacemos globales las variables
+    window.db = db;
+    window.ref = ref;
+    window.onValue = onValue;
+    window.off = off;
+  </script>
 
   <style>
     body {
@@ -179,6 +51,8 @@ const app = initializeApp(firebaseConfig);
       text-align: center;
       font-size: 23px;
       font-weight: 600;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 15px rgba(0,0,0,0.25);
     }
 
     .top-bar {
@@ -192,15 +66,18 @@ const app = initializeApp(firebaseConfig);
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
+    .top-bar select, .top-bar button {
+      padding: 10px 14px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+    }
+
     .top-bar button {
       background: #8c4bff;
       color: white;
-      padding: 10px 18px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 15px;
       font-weight: 600;
+      cursor: pointer;
     }
 
     #map {
@@ -225,167 +102,173 @@ const app = initializeApp(firebaseConfig);
       border: 4px solid white;
       box-shadow: 0 0 12px rgba(0, 122, 255, 0.9);
     }
+
   </style>
 </head>
 
 <body>
 
-  <header>En ruta: ubica tu transporte</header>
+<header>En ruta: ubica tu transporte</header>
 
-  <div class="top-bar">
-      <select id="unitSelect">
-          <option value="RA">RA</option>
-          <option value="RP">RP</option>
-          <option value="RV">RV</option>
-          <option value="RS">RS</option>
-      </select>
+<div class="top-bar">
+  <select id="unitSelect">
+    <option value="RA">RA</option>
+    <option value="RP">RP</option>
+    <option value="RV">RV</option>
+    <option value="RS">RS</option>
+  </select>
 
-      <button onclick="connectUnit()">Conectar</button>
-      <button onclick="stopAll()">Finalizar</button>
-  </div>
+  <button onclick="connectUnit()">Conectar</button>
+  <button onclick="stopAll()" style="background:#ff4b4b;">Finalizar</button>
+</div>
 
-  <div id="map"></div>
+<div id="map"></div>
 
-  <script>
-    /* ===========================================================
-                        FIREBASE CONFIG (TU NUEVO)
-    ============================================================ */
-    const firebaseConfig = {
-        apiKey: "AIzaSyD2HcDytEFh2lQqjR1zW4FQ2OtxyjI9Fus",
-        authDomain: "pgps-252ee.firebaseapp.com",
-        databaseURL: "https://pgps-252ee-default-rtdb.firebaseio.com",
-        projectId: "pgps-252ee",
-        storageBucket: "pgps-252ee.firebasestorage.app",
-        messagingSenderId: "872355118404",
-        appId: "1:872355118404:web:412e1ac6fc7755b2ccab11"
-    };
+<script>
+  /* ===========================================================
+                      MAPA Y MARCADORES
+  ============================================================ */
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+  const map = L.map("map").setView([25.423, -100.992], 14);
 
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
 
-    /* ===========================================================
-                              MAPA
-    ============================================================ */
+  const transportIcon = L.divIcon({
+    className: "white-purple-marker",
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+  });
 
-    const map = L.map("map").setView([25.423, -100.992], 14);
+  const userIcon = L.divIcon({
+    className: "user-location",
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+  });
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-    }).addTo(map);
+  let markerTransport = null;
+  let markerUser = null;
 
-    const transportIcon = L.divIcon({
-      className: "white-purple-marker",
-      iconSize: [22, 22],
-      iconAnchor: [11, 11],
-    });
+  let lastUserPos = null;
+  let lastTransportPos = null;
 
-    const userIcon = L.divIcon({
-      className: "user-location",
-      iconSize: [20, 20],
-      iconAnchor: [10, 10],
-    });
-
-    let markerTransport = null;
-    let markerUser = null;
-    let currentListener = null;
-    let userWatchID = null;
+  let watchID = null;
+  let currentListener = null;
 
 
-    /* ===========================================================
-                ACTUALIZAR UBICACIÓN DEL TRANSPORTE
-    ============================================================ */
-    function updateTransport(lat, lng) {
-      const pos = [lat, lng];
+  /* ===========================================================
+                        SEGUIMIENTO EN PANTALLA
+  ============================================================ */
+
+  function fitMarkers() {
+    if (!lastUserPos || !lastTransportPos) return;
+
+    const bounds = L.latLngBounds([ lastUserPos, lastTransportPos ]);
+    map.fitBounds(bounds, { padding: [80, 80] });
+  }
+
+
+  /* ===========================================================
+                        UBICACIÓN DEL USUARIO
+  ============================================================ */
+
+  function startUserTracking() {
+    if (!navigator.geolocation) return alert("No hay geolocalización.");
+
+    watchID = navigator.geolocation.watchPosition(
+      pos => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+
+        lastUserPos = [lat, lng];
+
+        if (!markerUser) {
+          markerUser = L.marker(lastUserPos, { icon: userIcon }).addTo(map);
+        } else {
+          markerUser.setLatLng(lastUserPos);
+        }
+
+        fitMarkers();
+      },
+      err => console.log("Error:", err),
+      { enableHighAccuracy: true }
+    );
+  }
+
+
+  /* ===========================================================
+                        UBICACIÓN DE LA UNIDAD
+  ============================================================ */
+
+  function connectUnit() {
+    const unit = document.getElementById("unitSelect").value;
+
+    if (currentListener) window.off(currentListener);
+
+    const r = window.ref(window.db, "ubicacion/" + unit);
+    currentListener = r;
+
+    window.onValue(r, snap => {
+      const d = snap.val();
+      if (!d) return;
+
+      lastTransportPos = [d.lat, d.lng];
 
       if (!markerTransport) {
-        markerTransport = L.marker(pos, { icon: transportIcon }).addTo(map);
-        map.setView(pos, 16);
-        return;
+        markerTransport = L.marker(lastTransportPos, { icon: transportIcon }).addTo(map);
+      } else {
+        markerTransport.setLatLng(lastTransportPos);
       }
 
-      markerTransport.setLatLng(pos);
+      fitMarkers();
+    });
+
+    startUserTracking();
+  }
+
+
+  /* ===========================================================
+                        FINALIZAR TODO
+  ============================================================ */
+
+  function stopAll() {
+    if (watchID !== null) {
+      navigator.geolocation.clearWatch(watchID);
+      watchID = null;
     }
 
-
-    /* ===========================================================
-                        CONECTAR UNIDAD
-    ============================================================ */
-    function connectUnit() {
-      const unit = document.getElementById("unitSelect").value;
-
-      if (currentListener) currentListener.off();
-
-      currentListener = db.ref("ubicacion/" + unit);
-
-      currentListener.on("value", snap => {
-        const d = snap.val();
-        if (!d) return;
-        updateTransport(d.lat, d.lng);
-      });
+    if (currentListener) {
+      window.off(currentListener);
+      currentListener = null;
     }
 
-
-    /* ===========================================================
-                  UBICACIÓN DEL USUARIO (NO MODIFICADA)
-    ============================================================ */
-    function startUserLocation() {
-      userWatchID = navigator.geolocation.watchPosition(
-        pos => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-
-          if (!markerUser) {
-            markerUser = L.marker([lat, lng], { icon: userIcon }).addTo(map);
-            return;
-          }
-
-          markerUser.setLatLng([lat, lng]);
-        },
-        err => console.log("Error:", err),
-        { enableHighAccuracy: true }
-      );
-    }
-
-    startUserLocation();
+    alert("Se detuvo la conexión y el seguimiento.");
+  }
 
 
-    /* ===========================================================
-                    BOTÓN FINALIZAR
-    ============================================================ */
-    function stopAll() {
-      if (currentListener) currentListener.off();
-      if (userWatchID) navigator.geolocation.clearWatch(userWatchID);
+  /* ===========================================================
+                          RUTA VERDE
+  ============================================================ */
 
-      alert("Se detuvo la recepción de ubicación.");
-    }
+  const osrmUrl =
+    "https://router.project-osrm.org/route/v1/driving/" +
+    "-100.9468,25.4530;" +
+    "-100.9917106,25.4415147;" +
+    "-100.96143732,25.44356175;" +
+    "-100.9468,25.4530" +
+    "?overview=full&geometries=geojson&steps=false";
 
+  fetch(osrmUrl)
+    .then(r => r.json())
+    .then(d => {
+      const coords = d.routes[0].geometry.coordinates;
+      const latlngs = coords.map(c => [c[1], c[0]]);
 
-    /* ===========================================================
-                  RUTA VERDE (NO SE MODIFICÓ)
-    ============================================================ */
-    const osrmUrl =
-        "https://router.project-osrm.org/route/v1/driving/" +
-        "-100.9468,25.4530;" +
-        "-100.9917106,25.4415147;" +
-        "-100.96143732,25.44356175;" +
-        "-100.9468,25.4530" +
-        "?overview=full&geometries=geojson&steps=false";
-
-    fetch(osrmUrl)
-      .then(r => r.json())
-      .then(d => {
-        const coords = d.routes[0].geometry.coordinates;
-        const latlngs = coords.map(c => [c[1], c[0]]);
-
-        L.polyline(latlngs, {
-            color: "rgba(53, 209, 111, 0.75)",
-            weight: 5
-        }).addTo(map);
-      });
-
-  </script>
+      L.polyline(latlngs, {
+        color: "rgba(53, 209, 111, 0.75)",
+        weight: 5
+      }).addTo(map);
+    });
+</script>
 
 </body>
 </html>
-
