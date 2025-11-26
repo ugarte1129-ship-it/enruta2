@@ -1,242 +1,151 @@
-<!DOCTYPE html> 
+<!-- Código actualizado con: ubicación cada 3s + marcador circular blanco con borde morado -->
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>En ruta: ubica tu transporte</title>
 
-  <!-- Leaflet -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
   <style>
-    body {
-      margin: 0;
-      font-family: "Arial", sans-serif;
-      background: #f1ecf7;
-    }
+    body { margin: 0; font-family: Arial, sans-serif; background: #f1ecf7; }
 
-    /* HEADER del color de tu captura */
     header {
-      background: #A87BFF;  /* <-- ESTE ES EL ÚNICO CAMBIO */
-      color: white;
-      padding: 18px;
-      text-align: center;
-      font-size: 23px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
+      background: #8C4BFF; color: white; padding: 18px; text-align: center;
+      font-size: 23px; font-weight: 600; letter-spacing: 0.5px;
       box-shadow: 0 2px 15px rgba(0,0,0,0.25);
     }
 
-    /* Barra blanca debajo del header */
     .top-bar {
-      width: 100%;
-      background: white;
-      padding: 12px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 15px;
+      width: 100%; background: white; padding: 12px; display: flex;
+      justify-content: center; align-items: center; gap: 15px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
     .top-bar select {
-      padding: 10px 14px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      font-size: 15px;
+      padding: 10px 14px; border-radius: 6px; border: 1px solid #ccc; font-size: 15px;
     }
 
     .top-bar button {
-      background: #8c4bff;
-      color: white;
-      padding: 10px 18px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 15px;
-      font-weight: 600;
+      background: #8c4bff; color: white; padding: 10px 18px;
+      border: none; border-radius: 6px; cursor: pointer;
+      font-size: 15px; font-weight: 600;
     }
 
-    .top-bar button:hover {
-      background: #7b3ae6;
-    }
+    .top-bar button:hover { background: #7b3ae6; }
 
-    #map {
-      width: 100%;
-      height: calc(100vh - 130px);
-    }
+    #map { width: 100%; height: calc(100vh - 130px); }
 
-    /* MARCADOR ANIMADO */
-    .purple-loader {
-      width: 38px;
-      height: 38px;
-      display: block;
-      position: relative;
-    }
-
-    .purple-loader::after {
-      content: '';
-      width: 38px;
-      height: 38px;
-      left: 0;
-      bottom: 0;
-      position: absolute;
-      border-radius: 50% 50% 0;
-      border: 12px solid #8c4bff;
-      transform: rotate(45deg) translate(0, 0);
-      animation: animMarker 0.45s ease-in-out infinite alternate;
-    }
-
-    .purple-loader::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      right: 0;
-      margin: auto;
-      top: 145%;
-      width: 16px;
-      height: 4px;
+    /* NUEVO MARCADOR: círculo blanco con borde morado */
+    .purple-circle {
+      width: 20px;
+      height: 20px;
+      background: white;
+      border: 4px solid #8c4bff;
       border-radius: 50%;
-      background: rgba(0, 0, 0, 0.25);
-      animation: animShadow 0.45s ease-in-out infinite alternate;
     }
-
-    @keyframes animMarker {
-      0% { transform: rotate(45deg) translate(4px, 4px); }
-      100% { transform: rotate(45deg) translate(-4px, -4px); }
-    }
-
-    @keyframes animShadow {
-      0% { transform: scale(0.5); }
-      100% { transform: scale(1); }
-    }
-
   </style>
 </head>
 <body>
 
-  <!-- HEADER -->
-  <header>En ruta: ubica tu transporte</header>
+<header>En ruta: ubica tu transporte</header>
 
-  <!-- Barra de opciones -->
-  <div class="top-bar">
-      <select id="unitSelect">
-          <option value="RA">RA</option>
-          <option value="RP">RP</option>
-          <option value="RV">RV</option>
-          <option value="RS">RS</option>
-      </select>
+<div class="top-bar">
+  <select id="unitSelect">
+    <option value="RA">RA</option>
+    <option value="RP">RP</option>
+    <option value="RV">RV</option>
+    <option value="RS">RS</option>
+  </select>
+  <button onclick="connectUnit()">Conectar</button>
+</div>
 
-      <button onclick="connectUnit()">Conectar</button>
-  </div>
+<div id="map"></div>
 
-  <div id="map"></div>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyA5pec-pqAnksqEKocrUv0HImO0H-qINDY",
+    authDomain: "pgps-252ee.firebaseapp.com",
+    databaseURL: "https://pgps-252ee-default-rtdb.firebaseio.com/",
+    projectId: "pgps-252ee",
+    storageBucket: "pgps-252ee.appspot.com",
+    messagingSenderId: "310435537463",
+    appId: "1:310435537463:web:9a0086d69a05b3b7fb2537"
+  };
 
-  <script>
-    /* ===========================================================
-                      FIREBASE
-    ============================================================ */
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyA5pec-pqAnksqEKocrUv0HImO0H-qINDY",
-        authDomain: "pgps-252ee.firebaseapp.com",
-        databaseURL: "https://pgps-252ee-default-rtdb.firebaseio.com/",
-        projectId: "pgps-252ee",
-        storageBucket: "pgps-252ee.appspot.com",
-        messagingSenderId: "310435537463",
-        appId: "1:310435537463:web:9a0086d69a05b3b7fb2537"
-    };
+  const map = L.map("map").setView([25.423, -100.992], 14);
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
 
-    /* ===========================================================
-                                MAPA
-    ============================================================ */
+  const circleIcon = L.divIcon({
+    className: "purple-circle",
+    iconSize: [20, 20],
+    iconAnchor: [10, 10]
+  });
 
-    const map = L.map("map").setView([25.423, -100.992], 14);
+  let marker = null;
+  let lastPosition = null;
+  let currentUnit = null;
+  let intervalHandle = null;
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-    }).addTo(map);
+  function updateLocation(lat, lng) {
+    const newPos = [lat, lng];
 
-    /* NUEVO MARCADOR ANIMADO */
-    const animatedPurpleIcon = L.divIcon({
-      className: "purple-loader",
-      iconSize: [38, 38],
-      iconAnchor: [19, 19]
-    });
-
-    let marker = null;
-    let lastPosition = null;
-    let currentListener = null;
-
-    function updateLocation(lat, lng) {
-      const newPos = [lat, lng];
-
-      if (!marker) {
-        marker = L.marker(newPos, { icon: animatedPurpleIcon }).addTo(map);
-        map.setView(newPos, 17);
-        lastPosition = newPos;
-        return;
-      }
-
-      if (lastPosition[0] === lat && lastPosition[1] === lng) return;
-
-      marker.setLatLng(newPos);
-      map.panTo(newPos);
-
+    if (!marker) {
+      marker = L.marker(newPos, { icon: circleIcon }).addTo(map);
+      map.setView(newPos, 17);
       lastPosition = newPos;
+      return;
     }
 
-    /* ===========================================================
-                        CAMBIAR UNIDAD
-    ============================================================ */
+    if (lastPosition[0] === lat && lastPosition[1] === lng) return;
 
-    function connectUnit() {
-      const unit = document.getElementById("unitSelect").value;
+    marker.setLatLng(newPos);
+    map.panTo(newPos);
+    lastPosition = newPos;
+  }
 
-      if (currentListener) currentListener.off();
+  function connectUnit() {
+    currentUnit = document.getElementById("unitSelect").value;
 
-      currentListener = db.ref("ubicacion/" + unit);
-      currentListener.on("value", snap => {
+    if (intervalHandle) clearInterval(intervalHandle);
+
+    intervalHandle = setInterval(() => {
+      db.ref("ubicacion/" + currentUnit).once("value", snap => {
         const d = snap.val();
         if (!d || !d.lat || !d.lng) return;
         updateLocation(d.lat, d.lng);
       });
-    }
+    }, 3000); // cada 3 segundos
+  }
 
-    /* ===========================================================
-                  RUTA VERDE 75% OPACIDAD
-    ============================================================ */
+  const osrmUrl =
+    "https://router.project-osrm.org/route/v1/driving/" +
+    "-100.9468,25.4530;" +
+    "-100.9917106,25.4415147;" +
+    "-100.96143732,25.44356175;" +
+    "-100.9468,25.4530" +
+    "?overview=full&geometries=geojson&steps=false";
 
-    const osrmUrl =
-        "https://router.project-osrm.org/route/v1/driving/" +
-        "-100.9468,25.4530;" +
-        "-100.9917106,25.4415147;" +
-        "-100.96143732,25.44356175;" +
-        "-100.9468,25.4530" +
-        "?overview=full&geometries=geojson&steps=false";
+  fetch(osrmUrl)
+    .then(r => r.json())
+    .then(d => {
+      const coords = d.routes[0].geometry.coordinates;
+      const latlngs = coords.map(c => [c[1], c[0]]);
 
-    fetch(osrmUrl)
-      .then(r => r.json())
-      .then(d => {
-        const coords = d.routes[0].geometry.coordinates;
-        const latlngs = coords.map(c => [c[1], c[0]]);
-
-        L.polyline(latlngs, {
-            color: "rgba(53, 209, 111, 0.75)",
-            weight: 5
-        }).addTo(map);
-      });
-  </script>
+      L.polyline(latlngs, {
+        color: "rgba(53, 209, 111, 0.75)",
+        weight: 5
+      }).addTo(map);
+    });
+</script>
 </body>
 </html>
