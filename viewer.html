@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -19,7 +19,7 @@
   <style>
     body {
       margin: 0;
-      font-family: "Arial", sans-serif;
+      font-family: "Montserrat", sans-serif;
       background: #f1ecf7;
     }
 
@@ -63,37 +63,34 @@
       font-weight: 600;
     }
 
-    .top-bar button:hover {
-      background: #7b3ae6;
-    }
-
     #map {
       width: 100%;
       height: calc(100vh - 130px);
     }
 
-    /* Marcador transporte */
-    .purple-circle {
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
+    /* Marcador blanco con borde morado */
+    .white-purple-marker {
       background: white;
-      border: 4px solid #8c4bff;
-      box-shadow: 0 0 8px rgba(0,0,0,0.25);
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 4px solid #8C4BFF;
+      box-shadow: 0 0 8px rgba(140, 75, 255, 0.6);
     }
 
-    /* Marcador usuario */
-    .user-circle {
-      width: 18px;
-      height: 18px;
+    /* Ubicación del usuario (azul estilo Google Maps) */
+    .user-location {
+      background: #4A90E2;
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
-      background: #2196F3;
-      border: 3px solid white;
-      box-shadow: 0 0 6px rgba(0,0,0,0.3);
+      border: 4px solid white;
+      box-shadow: 0 0 12px rgba(0, 122, 255, 0.9);
     }
 
   </style>
 </head>
+
 <body>
 
   <header>En ruta: ubica tu transporte</header>
@@ -113,7 +110,7 @@
 
   <script>
     /* ===========================================================
-                      FIREBASE
+                        FIREBASE
     ============================================================ */
 
     const firebaseConfig = {
@@ -130,7 +127,7 @@
     const db = firebase.database();
 
     /* ===========================================================
-                                MAPA
+                              MAPA
     ============================================================ */
 
     const map = L.map("map").setView([25.423, -100.992], 14);
@@ -139,61 +136,44 @@
       maxZoom: 19,
     }).addTo(map);
 
-    /* Marcador transporte */
-    const purpleCircleIcon = L.divIcon({
-      className: "purple-circle",
-      iconSize: [26, 26],
-      iconAnchor: [13, 13]
+    /* Marcador del transporte */
+    const transportIcon = L.divIcon({
+      className: "white-purple-marker",
+      iconSize: [22, 22],
+      iconAnchor: [11, 11],
     });
 
-    /* Marcador usuario */
+    /* Marcador del usuario */
     const userIcon = L.divIcon({
-      className: "user-circle",
-      iconSize: [18, 18],
-      iconAnchor: [9, 9]
+      className: "user-location",
+      iconSize: [20, 20],
+      iconAnchor: [10, 10],
     });
 
-    let marker = null;         // transporte
-    let userMarker = null;     // usuario
-    let lastPosition = null;
+    let markerTransport = null;
+    let markerUser = null;
+    let lastTransportPos = null;
     let currentListener = null;
 
-    function updateLocation(lat, lng) {
+    /* ===========================================================
+                ACTUALIZAR UBICACIÓN DEL TRANSPORTE
+    ============================================================ */
+
+    function updateTransport(lat, lng) {
       const newPos = [lat, lng];
 
-      if (!marker) {
-        marker = L.marker(newPos, { icon: purpleCircleIcon }).addTo(map);
-        lastPosition = newPos;
+      if (!markerTransport) {
+        markerTransport = L.marker(newPos, { icon: transportIcon }).addTo(map);
+        map.setView(newPos, 17);
+        lastTransportPos = newPos;
         return;
       }
 
-      if (lastPosition[0] === lat && lastPosition[1] === lng) return;
+      if (lastTransportPos[0] === lat && lastTransportPos[1] === lng) return;
 
-      marker.setLatLng(newPos);
-      lastPosition = newPos;
+      markerTransport.setLatLng(newPos);
+      lastTransportPos = newPos;
     }
-
-    /* ===========================================================
-                        UBICACIÓN DEL USUARIO
-    ============================================================ */
-
-    function trackUser() {
-      if (!navigator.geolocation) return;
-
-      navigator.geolocation.watchPosition(pos => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-
-        if (!userMarker) {
-          userMarker = L.marker([lat, lng], { icon: userIcon }).addTo(map);
-          return;
-        }
-
-        userMarker.setLatLng([lat, lng]);
-      });
-    }
-
-    trackUser(); // inicia rastreo del usuario
 
     /* ===========================================================
                         CAMBIAR UNIDAD
@@ -205,15 +185,48 @@
       if (currentListener) currentListener.off();
 
       currentListener = db.ref("ubicacion/" + unit);
+
       currentListener.on("value", snap => {
         const d = snap.val();
         if (!d || !d.lat || !d.lng) return;
-        updateLocation(d.lat, d.lng);
+
+        updateTransport(d.lat, d.lng);
       });
     }
 
     /* ===========================================================
-                    RUTA VERDE 75% OPACIDAD
+                UBICACIÓN DEL USUARIO EN TIEMPO REAL
+    ============================================================ */
+
+    function startUserLocation() {
+      if (!navigator.geolocation) {
+        alert("La geolocalización no está disponible en este dispositivo.");
+        return;
+      }
+
+      navigator.geolocation.watchPosition(
+        pos => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+
+          const userPos = [lat, lng];
+
+          if (!markerUser) {
+            markerUser = L.marker(userPos, { icon: userIcon }).addTo(map);
+            return;
+          }
+
+          markerUser.setLatLng(userPos);
+        },
+        err => console.log("Error obteniendo ubicación:", err),
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+      );
+    }
+
+    startUserLocation();
+
+    /* ===========================================================
+                      RUTA VERDE (NO LA MODIFICO)
     ============================================================ */
 
     const osrmUrl =
@@ -236,5 +249,6 @@
         }).addTo(map);
       });
   </script>
+
 </body>
 </html>
