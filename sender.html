@@ -84,7 +84,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <script>
-        // Firebase real
+        // FIREBASE CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyA5pec-pqAnksqEKocrUv0HImO0H-qINDY",
             authDomain: "pgps-252ee.firebaseapp.com",
@@ -98,6 +98,8 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        let trackingID = null; // evita duplicar procesos
+
         function startTracking() {
             const busID = document.getElementById("busID").value;
 
@@ -106,9 +108,25 @@
                 return;
             }
 
+            if (trackingID) {
+                alert("Ya se está enviando la ubicación.");
+                return;
+            }
+
             alert("Enviando ubicación en tiempo real para la unidad: " + busID);
 
-            navigator.geolocation.watchPosition(
+            // Nueva API de permisos para iPhone/iOS 13+
+            if (navigator.permissions) {
+                navigator.permissions.query({ name: "geolocation" })
+                    .then(result => {
+                        if (result.state === "denied") {
+                            alert("Debes activar permisos de ubicación.");
+                        }
+                    });
+            }
+
+            // INICIAR TRACKING
+            trackingID = navigator.geolocation.watchPosition(
                 pos => {
                     db.ref("ubicacion/" + busID).set({
                         lat: pos.coords.latitude,
@@ -116,8 +134,8 @@
                         timestamp: Date.now()
                     });
                 },
-                err => alert("Error: " + err.message),
-                { enableHighAccuracy: true }
+                err => alert("Error al obtener ubicación: " + err.message),
+                { enableHighAccuracy: true, maximumAge: 0 }
             );
         }
     </script>
