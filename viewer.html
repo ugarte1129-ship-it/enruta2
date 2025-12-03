@@ -1,102 +1,380 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi App Web</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>En ruta: ubica tu transporte</title>
 
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-        }
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-        /* ==== MODAL PUBLICITARIO ==== */
-        #adModal {
-            display: none; /* Oculto al inicio */
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.65); /* Fondo oscuro */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
+  <!-- Firebase MODULAR -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, onValue, off } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-        #adContent {
-            position: relative;
-            background: white;
-            padding: 0;
-            border-radius: 12px;
-            box-shadow: 0px 0px 20px rgba(255, 255, 255, 0.7);
-            max-width: 90%;
-            max-height: 90%;
-            overflow: hidden;
-        }
+    /* ===========================================================
+                        FIREBASE CONFIG
+    ============================================================ */
+    const firebaseConfig = {
+      apiKey: "AIzaSyD2HcDytEFh2lQqjR1zW4FQ2OtxyjI9Fus",
+      authDomain: "pgps-252ee.firebaseapp.com",
+      databaseURL: "https://pgps-252ee-default-rtdb.firebaseio.com",
+      projectId: "pgps-252ee",
+      storageBucket: "pgps-252ee.firebasestorage.app",
+      messagingSenderId: "872355118404",
+      appId: "1:872355118404:web:412e1ac6fc7755b2ccab11"
+    };
 
-        #adImage {
-            width: 100%;
-            height: auto;
-            display: block;
-            cursor: pointer;
-        }
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-        #closeAdBtn {
-            position: absolute;
-            top: 8px;
-            right: 12px;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            font-size: 20px;
-            border: none;
-            cursor: pointer;
-            padding: 4px 10px;
-            border-radius: 6px;
-        }
-    </style>
+    // Hacemos globales las variables
+    window.db = db;
+    window.ref = ref;
+    window.onValue = onValue;
+    window.off = off;
+  </script>
 
+  <style>
+    body {
+      margin: 0;
+      font-family: "Montserrat", sans-serif;
+      background: #f1ecf7;
+    }
+
+    header {
+      background: #8C4BFF;
+      color: white;
+      padding: 18px;
+      text-align: center;
+      font-size: 23px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 15px rgba(0,0,0,0.25);
+    }
+
+    .top-bar {
+      width: 100%;
+      background: white;
+      padding: 12px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .top-bar select, .top-bar button {
+      padding: 10px 14px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+    }
+
+    .top-bar button {
+      background: #8c4bff;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    #map {
+      width: 100%;
+      height: calc(100vh - 130px);
+    }
+
+    .white-purple-marker {
+      background: white;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 4px solid #8C4BFF;
+      box-shadow: 0 0 8px rgba(140, 75, 255, 0.6);
+    }
+
+    .user-location {
+      background: #4A90E2;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 4px solid white;
+      box-shadow: 0 0 12px rgba(0, 122, 255, 0.9);
+    }
+
+  </style>
 </head>
+
 <body>
 
-    <h1>Mi aplicación web</h1>
+<header>En ruta: ubica tu transporte</header>
 
-    <button onclick="finalizar()">Finalizar</button>
+<div class="top-bar">
+  <select id="unitSelect">
+    <option value="RA">RA</option>
+    <option value="RP">RP</option>
+    <option value="RV">RV</option>
+    <option value="RS">RS</option>
+  </select>
+
+  <button onclick="connectUnit()">Conectar</button>
+  <button onclick="stopAll()" style="background:#ff4b4b;">Finalizar</button>
+</div>
+
+<div id="map"></div>
+
+<!-- ===================== PUBLICIDAD (MODAL) ===================== -->
+<style>
+  /* estilos del modal */
+  #promoModal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.65);
+    display: none;           /* oculto por defecto */
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+  }
+
+  #promoContent {
+    position: relative;
+    background: white;
+    padding: 0;
+    border-radius: 10px;
+    max-width: 90%;
+    max-height: 90%;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    cursor: pointer;
+  }
+
+  #promoContent img {
+    width: 100%;
+    display: block;
+  }
+
+  #closePromo {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    font-size: 25px;
+    font-weight: bold;
+    cursor: pointer;
+    background: rgba(0,0,0,0.65);
+    color: white;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    text-align: center;
+    line-height: 32px;
+    z-index: 99999;
+  }
+</style>
+
+<div id="promoModal" aria-hidden="true">
+  <div id="promoContent" role="button" tabindex="0">
+    <div id="closePromo" aria-label="Cerrar anuncio">&times;</div>
+    <img id="promoImage" src="https://scontent.fntr10-1.fna.fbcdn.net/v/t39.30808-6/272136469_827346061313907_3994401397735442805_n.png?_nc_cat=102&ccb=1-7&_nc_sid=cc71e4&_nc_ohc=j1xYx_Puu2wQ7kNvwFlKq0c&_nc_oc=AdnGJQL5GLBmZQT2g0cUyJWdLkAp4D8Jf8xZmTl-_HElZW1ZSF0Ng0IDvALVtZZj30QWJi_ioI-lehmZQOFvy9tp&_nc_zt=23&_nc_ht=scontent.fntr10-1.fna&_nc_gid=luBtDtYBTdsRKT6MibeWzA&oh=00_Afm7Scwx24sydI1H1z5iVaaaV_W-EEC_Hj7mx1zwGMZ2FA&oe=69357A18" alt="Publicidad">
+  </div>
+</div>
+
+<script>
+  /* ===========================================================
+                      MAPA Y MARCADORES
+    ------------------------------------------------------------
+    Incluyo aquí TODO el script principal (mapa, firebase listeners,
+    startUserTracking, connectUnit, stopAll, etc). El modal también
+    lo controlo desde este bloque para evitar problemas de que
+    los elementos no existan cuando se ejecuten los handlers.
+  ============================================================ */
+
+  const map = L.map("map").setView([25.423, -100.992], 14);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
+
+  const transportIcon = L.divIcon({
+    className: "white-purple-marker",
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+  });
+
+  const userIcon = L.divIcon({
+    className: "user-location",
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+  });
+
+  let markerTransport = null;
+  let markerUser = null;
+
+  let lastUserPos = null;
+  let lastTransportPos = null;
+
+  let watchID = null;
+  let currentListener = null;
 
 
-    <!-- ===== MODAL PUBLICITARIO ===== -->
-    <div id="adModal">
-        <div id="adContent">
-            <button id="closeAdBtn" onclick="cerrarPublicidad()">X</button>
+  /* ===========================================================
+                        SEGUIMIENTO EN PANTALLA
+  ============================================================ */
 
-            <!-- IMAGEN QUE REDIRIGE AL CLICK -->
-            <img id="adImage"
-                 src="https://via.placeholder.com/800x600.png?text=Publicidad" 
-                 alt="Publicidad">
-        </div>
-    </div>
+  function fitMarkers() {
+    if (!lastUserPos || !lastTransportPos) return;
+
+    const bounds = L.latLngBounds([ lastUserPos, lastTransportPos ]);
+    map.fitBounds(bounds, { padding: [80, 80] });
+  }
 
 
-    <script>
+  /* ===========================================================
+                        UBICACIÓN DEL USUARIO
+  ============================================================ */
 
-        /* ===== ABRIR PUBLICIDAD ===== */
-        function finalizar() {
-            document.getElementById("adModal").style.display = "flex";
+  function startUserTracking() {
+    if (!navigator.geolocation) return alert("No hay geolocalización.");
+
+    watchID = navigator.geolocation.watchPosition(
+      pos => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+
+        lastUserPos = [lat, lng];
+
+        if (!markerUser) {
+          markerUser = L.marker(lastUserPos, { icon: userIcon }).addTo(map);
+        } else {
+          markerUser.setLatLng(lastUserPos);
         }
 
-        /* ===== CERRAR PUBLICIDAD ===== */
-        function cerrarPublicidad() {
-            document.getElementById("adModal").style.display = "none";
-        }
+        fitMarkers();
+      },
+      err => console.log("Error:", err),
+      { enableHighAccuracy: true }
+    );
+  }
 
-        /* ===== CLICK EN LA IMAGEN ===== */
-        document.getElementById("adImage").onclick = function () {
-            window.open("https://www.facebook.com/LasMorasCLSaltillo/", "_blank");
-        };
 
-    </script>
+  /* ===========================================================
+                        UBICACIÓN DE LA UNIDAD
+  ============================================================ */
+
+  function connectUnit() {
+    const unit = document.getElementById("unitSelect").value;
+
+    if (currentListener) window.off(currentListener);
+
+    const r = window.ref(window.db, "ubicacion/" + unit);
+    currentListener = r;
+
+    window.onValue(r, snap => {
+      const d = snap.val();
+      if (!d) return;
+
+      lastTransportPos = [d.lat, d.lng];
+
+      if (!markerTransport) {
+        markerTransport = L.marker(lastTransportPos, { icon: transportIcon }).addTo(map);
+      } else {
+        markerTransport.setLatLng(lastTransportPos);
+      }
+
+      fitMarkers();
+    });
+
+    startUserTracking();
+  }
+
+
+  /* ===========================================================
+                        FINALIZAR TODO
+  ============================================================ */
+
+  function stopAll() {
+    if (watchID !== null) {
+      navigator.geolocation.clearWatch(watchID);
+      watchID = null;
+    }
+
+    if (currentListener) {
+      window.off(currentListener);
+      currentListener = null;
+    }
+
+    alert("Se detuvo la conexión y el seguimiento.");
+    mostrarPublicidad();  // <-- llamada al modal (sin tocar otra lógica)
+  }
+
+
+  /* ===========================================================
+                          RUTA VERDE
+  ============================================================ */
+
+  const osrmUrl =
+    "https://router.project-osrm.org/route/v1/driving/" +
+    "-100.9468,25.4530;" +
+    "-100.9917106,25.4415147;" +
+    "-100.96143732,25.44356175;" +
+    "-100.9468,25.4530" +
+    "?overview=full&geometries=geojson&steps=false";
+
+  fetch(osrmUrl)
+    .then(r => r.json())
+    .then(d => {
+      const coords = d.routes[0].geometry.coordinates;
+      const latlngs = coords.map(c => [c[1], c[0]]);
+
+      L.polyline(latlngs, {
+        color: "rgba(53, 209, 111, 0.75)",
+        weight: 5
+      }).addTo(map);
+    });
+
+
+  /* ===========================================================
+                         CONTROL DEL MODAL
+     - mostrarPublicidad() abre el modal
+     - el botón X lo cierra
+     - clic sobre el contenido (imagen) abre Facebook en nueva pestaña
+  ============================================================ */
+
+  function mostrarPublicidad() {
+    const modal = document.getElementById("promoModal");
+    if (!modal) return; // por seguridad
+    modal.style.display = "flex";
+    modal.setAttribute("aria-hidden", "false");
+  }
+
+  // Cerrar con la X
+  document.getElementById("closePromo").addEventListener("click", function (e) {
+    e.stopPropagation(); // evitar que el click burbujee al promoContent
+    const modal = document.getElementById("promoModal");
+    if (modal) {
+      modal.style.display = "none";
+      modal.setAttribute("aria-hidden", "true");
+    }
+  });
+
+  // Click sobre la tarjeta (imagen) abre el enlace en nueva pestaña
+  document.getElementById("promoContent").addEventListener("click", function () {
+    window.open("https://www.facebook.com/LasMorasCLSaltillo/", "_blank");
+  });
+
+  // Evitar que ESC cierre o haga cosas raras — (opcional, no cambia lógica)
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+      const modal = document.getElementById("promoModal");
+      if (modal && modal.style.display === "flex") {
+        modal.style.display = "none";
+        modal.setAttribute("aria-hidden", "true");
+      }
+    }
+  });
+
+</script>
 
 </body>
 </html>
