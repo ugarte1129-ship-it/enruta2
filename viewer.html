@@ -9,14 +9,11 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- Firebase MODULAR -->
+  <!-- Firebase MODULAR (sin tocar) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getDatabase, ref, onValue, off } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-    /* ===========================================================
-                        FIREBASE CONFIG
-    ============================================================ */
     const firebaseConfig = {
       apiKey: "AIzaSyD2HcDytEFh2lQqjR1zW4FQ2OtxyjI9Fus",
       authDomain: "pgps-252ee.firebaseapp.com",
@@ -30,7 +27,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // Hacemos globales las variables
+    // Exponer variables globales (igual que antes)
     window.db = db;
     window.ref = ref;
     window.onValue = onValue;
@@ -38,6 +35,7 @@
   </script>
 
   <style>
+    /* ===== estilos originales ===== */
     body {
       margin: 0;
       font-family: "Montserrat", sans-serif;
@@ -103,6 +101,68 @@
       box-shadow: 0 0 12px rgba(0, 122, 255, 0.9);
     }
 
+    /* ===== modal publicitario (AISLADO y no intrusivo) =====
+       - No interfiere con otros estilos
+       - Aparece con clase .show
+    */
+    #promoModal {
+      position: fixed;
+      inset: 0; /* top:0; right:0; bottom:0; left:0; */
+      display: none; /* oculto por defecto */
+      justify-content: center;
+      align-items: center;
+      background: rgba(0,0,0,0.65);
+      z-index: 99999; /* muy alto para encima del mapa y controles */
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #promoModal.show {
+      display: flex;
+    }
+
+    #promoBox {
+      position: relative;
+      max-width: 920px;
+      width: calc(100% - 40px);
+      max-height: 90vh;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+    }
+
+    #promoImage {
+      display: block;
+      width: 100%;
+      height: auto;
+      object-fit: contain;
+      cursor: pointer; /* click en la imagen redirige */
+      -webkit-user-drag: none;
+      user-select: none;
+    }
+
+    #promoClose {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.7);
+      color: #fff;
+      border: none;
+      font-size: 20px;
+      line-height: 36px;
+      text-align: center;
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    /* Pequeñas adaptaciones para móviles */
+    @media (max-width: 480px) {
+      #promoBox { width: calc(100% - 24px); border-radius: 8px; }
+      #promoClose { width: 32px; height: 32px; line-height: 32px; font-size: 18px; top:8px; right:8px; }
+    }
   </style>
 </head>
 
@@ -124,72 +184,20 @@
 
 <div id="map"></div>
 
-<!-- ===================== PUBLICIDAD (MODAL) ===================== -->
-<style>
-  /* estilos del modal */
-  #promoModal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.65);
-    display: none;           /* oculto por defecto */
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-  }
-
-  #promoContent {
-    position: relative;
-    background: white;
-    padding: 0;
-    border-radius: 10px;
-    max-width: 90%;
-    max-height: 90%;
-    overflow: hidden;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
-    cursor: pointer;
-  }
-
-  #promoContent img {
-    width: 100%;
-    display: block;
-  }
-
-  #closePromo {
-    position: absolute;
-    top: 8px;
-    right: 10px;
-    font-size: 25px;
-    font-weight: bold;
-    cursor: pointer;
-    background: rgba(0,0,0,0.65);
-    color: white;
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    text-align: center;
-    line-height: 32px;
-    z-index: 99999;
-  }
-</style>
-
-<div id="promoModal" aria-hidden="true">
-  <div id="promoContent" role="button" tabindex="0">
-    <div id="closePromo" aria-label="Cerrar anuncio">&times;</div>
-    <img id="promoImage" src="https://scontent.fntr10-1.fna.fbcdn.net/v/t39.30808-6/272136469_827346061313907_3994401397735442805_n.png?_nc_cat=102&ccb=1-7&_nc_sid=cc71e4&_nc_ohc=j1xYx_Puu2wQ7kNvwFlKq0c&_nc_oc=AdnGJQL5GLBmZQT2g0cUyJWdLkAp4D8Jf8xZmTl-_HElZW1ZSF0Ng0IDvALVtZZj30QWJi_ioI-lehmZQOFvy9tp&_nc_zt=23&_nc_ht=scontent.fntr10-1.fna&_nc_gid=luBtDtYBTdsRKT6MibeWzA&oh=00_Afm7Scwx24sydI1H1z5iVaaaV_W-EEC_Hj7mx1zwGMZ2FA&oe=69357A18" alt="Publicidad">
+<!-- ========== MODAL PUBLICITARIO (HTML) ========== -->
+<!-- Colocado aquí y controlado desde script al final -->
+<div id="promoModal" aria-hidden="true" role="dialog" aria-label="Publicidad">
+  <div id="promoBox" role="document">
+    <button id="promoClose" aria-label="Cerrar anuncio">&times;</button>
+    <img id="promoImage"
+         alt="Publicidad"
+         src="https://scontent.fntr10-1.fna.fbcdn.net/v/t39.30808-6/272136469_827346061313907_3994401397735442805_n.png?_nc_cat=102&ccb=1-7&_nc_sid=cc71e4&_nc_ohc=j1xYx_Puu2wQ7kNvwFlKq0c&_nc_oc=AdnGJQL5GLBmZQT2g0cUyJWdLkAp4D8Jf8xZmTl-_HElZW1ZSF0Ng0IDvALVtZZj30QWJi_ioI-lehmZQOFvy9tp&_nc_zt=23&_nc_ht=scontent.fntr10-1.fna&_nc_gid=luBtDtYBTdsRKT6MibeWzA&oh=00_Afm7Scwx24sydI1H1z5iVaaaV_W-EEC_Hj7mx1zwGMZ2FA&oe=69357A18">
   </div>
 </div>
 
 <script>
   /* ===========================================================
-                      MAPA Y MARCADORES
-    ------------------------------------------------------------
-    Incluyo aquí TODO el script principal (mapa, firebase listeners,
-    startUserTracking, connectUnit, stopAll, etc). El modal también
-    lo controlo desde este bloque para evitar problemas de que
-    los elementos no existan cuando se ejecuten los handlers.
+                      MAPA Y MARCADORES (SIN CAMBIOS)
   ============================================================ */
 
   const map = L.map("map").setView([25.423, -100.992], 14);
@@ -217,26 +225,14 @@
   let watchID = null;
   let currentListener = null;
 
-
-  /* ===========================================================
-                        SEGUIMIENTO EN PANTALLA
-  ============================================================ */
-
   function fitMarkers() {
     if (!lastUserPos || !lastTransportPos) return;
-
     const bounds = L.latLngBounds([ lastUserPos, lastTransportPos ]);
     map.fitBounds(bounds, { padding: [80, 80] });
   }
 
-
-  /* ===========================================================
-                        UBICACIÓN DEL USUARIO
-  ============================================================ */
-
   function startUserTracking() {
     if (!navigator.geolocation) return alert("No hay geolocalización.");
-
     watchID = navigator.geolocation.watchPosition(
       pos => {
         const lat = pos.coords.latitude;
@@ -256,11 +252,6 @@
       { enableHighAccuracy: true }
     );
   }
-
-
-  /* ===========================================================
-                        UBICACIÓN DE LA UNIDAD
-  ============================================================ */
 
   function connectUnit() {
     const unit = document.getElementById("unitSelect").value;
@@ -288,11 +279,6 @@
     startUserTracking();
   }
 
-
-  /* ===========================================================
-                        FINALIZAR TODO
-  ============================================================ */
-
   function stopAll() {
     if (watchID !== null) {
       navigator.geolocation.clearWatch(watchID);
@@ -304,14 +290,10 @@
       currentListener = null;
     }
 
+    // Mantengo tu alert (no lo toqué) — el modal se abrirá después de cerrarlo.
     alert("Se detuvo la conexión y el seguimiento.");
-    mostrarPublicidad();  // <-- llamada al modal (sin tocar otra lógica)
+    mostrarPublicidad(); // ÚNICA ADICIÓN: abre el modal
   }
-
-
-  /* ===========================================================
-                          RUTA VERDE
-  ============================================================ */
 
   const osrmUrl =
     "https://router.project-osrm.org/route/v1/driving/" +
@@ -326,54 +308,81 @@
     .then(d => {
       const coords = d.routes[0].geometry.coordinates;
       const latlngs = coords.map(c => [c[1], c[0]]);
-
       L.polyline(latlngs, {
         color: "rgba(53, 209, 111, 0.75)",
         weight: 5
       }).addTo(map);
+    })
+    .catch(err => {
+      // No interfiere con nada si falla la ruta
+      console.warn("No se pudo cargar la ruta OSRM:", err);
     });
 
 
   /* ===========================================================
-                         CONTROL DEL MODAL
-     - mostrarPublicidad() abre el modal
-     - el botón X lo cierra
-     - clic sobre el contenido (imagen) abre Facebook en nueva pestaña
+                      CONTROL DEL MODAL (NO INTRUSIVO)
+     - Se añade el listener en DOMContentLoaded para evitar errores
+       de "null" si el script se ejecuta antes del DOM.
   ============================================================ */
 
   function mostrarPublicidad() {
     const modal = document.getElementById("promoModal");
-    if (!modal) return; // por seguridad
-    modal.style.display = "flex";
+    if (!modal) return;
+    modal.classList.add("show");
     modal.setAttribute("aria-hidden", "false");
+    // evitar que la página haga scroll mientras está abierto (opcional, seguro)
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
   }
 
-  // Cerrar con la X
-  document.getElementById("closePromo").addEventListener("click", function (e) {
-    e.stopPropagation(); // evitar que el click burbujee al promoContent
+  function ocultarPublicidad() {
     const modal = document.getElementById("promoModal");
+    if (!modal) return;
+    modal.classList.remove("show");
+    modal.setAttribute("aria-hidden", "true");
+    document.documentElement.style.overflow = "";
+    document.body.style.overflow = "";
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const closeBtn = document.getElementById("promoClose");
+    const promoImg = document.getElementById("promoImage");
+    const modal = document.getElementById("promoModal");
+
+    if (closeBtn) {
+      closeBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        ocultarPublicidad();
+      });
+    }
+
+    // Click solamente en la imagen abre el enlace (NO el contenedor)
+    if (promoImg) {
+      promoImg.addEventListener("click", function (e) {
+        // abrir en nueva pestaña
+        window.open("https://www.facebook.com/LasMorasCLSaltillo/", "_blank", "noopener");
+      });
+    }
+
+    // Si se hace click fuera del box (en el fondo oscuro) se cierra el modal
     if (modal) {
-      modal.style.display = "none";
-      modal.setAttribute("aria-hidden", "true");
+      modal.addEventListener("click", function (e) {
+        if (e.target === modal) {
+          ocultarPublicidad();
+        }
+      });
     }
-  });
 
-  // Click sobre la tarjeta (imagen) abre el enlace en nueva pestaña
-  document.getElementById("promoContent").addEventListener("click", function () {
-    window.open("https://www.facebook.com/LasMorasCLSaltillo/", "_blank");
-  });
-
-  // Evitar que ESC cierre o haga cosas raras — (opcional, no cambia lógica)
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") {
-      const modal = document.getElementById("promoModal");
-      if (modal && modal.style.display === "flex") {
-        modal.style.display = "none";
-        modal.setAttribute("aria-hidden", "true");
+    // Tecla ESC cierra el modal (no interfiere con el resto)
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        const m = document.getElementById("promoModal");
+        if (m && m.classList.contains("show")) ocultarPublicidad();
       }
-    }
+    });
   });
 
+  // FIN DEL SCRIPT
 </script>
 
 </body>
